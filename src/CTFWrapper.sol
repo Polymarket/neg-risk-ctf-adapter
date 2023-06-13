@@ -19,14 +19,8 @@ contract CTFWrapper is IERC1155TokenReceiver {
     IConditionalTokens public immutable ctf;
     IERC20 public immutable usdc;
     PUSDC public immutable pusdc;
-    address private erc1155Recipient;
-    bytes32 constant parentCollectionId = bytes32(0);
 
-    // marketId => questionIds
-    // since questionIds are a function of conditionIds,
-    // we only need to store the length !
-    // hashing is cheaper than sloading
-    mapping(bytes32 => bytes32[]) public questionIds;
+    mapping(bytes32 => uint256) public outcomeCounts;
     // questionId => marketId
     mapping(bytes32 => bytes32) public marketIds;
 
@@ -53,7 +47,7 @@ contract CTFWrapper is IERC1155TokenReceiver {
 
         ctf.splitPosition(
             IERC20(address(pusdc)),
-            parentCollectionId,
+            bytes32(0),
             _conditionId,
             Helpers._partition(),
             _amount
@@ -69,9 +63,6 @@ contract CTFWrapper is IERC1155TokenReceiver {
     }
 
     function mergePositions(bytes32 _conditionId, uint _amount) external {
-        uint256[] memory partition = Helpers._partition();
-
-        // 1. need to compute positionIds
         uint256[] memory positionIds = Helpers._positionIds(
             address(pusdc),
             _conditionId
@@ -88,162 +79,148 @@ contract CTFWrapper is IERC1155TokenReceiver {
 
         ctf.mergePositions(
             IERC20(address(pusdc)),
-            parentCollectionId,
+            bytes32(0),
             _conditionId,
-            partition,
+            Helpers._partition(),
             _amount
         );
 
         pusdc.transfer(msg.sender, _amount);
     }
 
-    function prepareConditionUnderMarket(
-        address _oracle,
-        bytes32 _marketId
-    ) external {
-        uint256 conditionIndex = questionIds[_marketId].length;
-        bytes32 questionId = keccak256(abi.encode(_marketId, conditionIndex));
+    function addOutcome(address _oracle, bytes32 _marketId) external {
+        uint256 outcomeIndex = outcomeCounts[_marketId];
+        bytes32 questionId = _computeQuestionId(_marketId, outcomeIndex);
         ctf.prepareCondition(_oracle, questionId, 2);
-        questionIds[_marketId].push(questionId);
+        ++outcomeCounts[_marketId];
     }
 
+    // what if instead of questionIds we use an indexSet
+    // which looks like 0x0000....01101
+    // the lsb is the _first_ outcome
+    // this is the same as index sets
     function negativeRisk(
         bytes32 _marketId,
         uint256 _amount,
-        bytes32[] memory _questionIds
+        uint256 _indexSet
     ) external {
-        uint256 i;
-        uint256 noTokensLength = _questionIds.length;
+        uint256 noTokensLength;
 
-        while (i < noTokensLength) {
-            if (marketIds[_questionIds[i]] != _marketId) {
-                revert("questionId not associated with marketId");
+        // count index set size
+        {
+            uint256 indexSet = _indexSet;
+            while (indexSet > 0) {
+                if (indexSet & 1 == 1) {
+                    ++noTokensLength;
+                }
+                indexSet >>= 1;
             }
         }
 
-        uint256[] memory noPositionIds = _noPositionIds(_questionIds);
+        uint256 outcomeCount = outcomeCounts[_marketId];
+        uint256 yesTokensLength = outcomeCount - noTokensLength;
+
+        uint256[] memory yesPositionIds = new uint256[](yesTokensLength);
+        uint256[] memory noPositionIds = new uint256[](noTokensLength);
+
+        // split yes conditions
+        // and compute positionIds
+        {
+            pusdc.mint(yesTokensLength * _amount);
+
+            uint256 outcomeIndex;
+            uint256 noIndex;
+            uint256 yesIndex;
+
+            while (outcomeIndex < outcomeCount) {
+                bytes32 questionId = _computeQuestionId(
+                    _marketId,
+                    outcomeIndex
+                );
+
+                if (_indexSet & (1 << outcomeIndex) == 1) {
+                    noPositionIds[noIndex] = _computePositionId(
+                        questionId,
+                        false
+                    );
+
+                    ++noIndex;
+                } else {
+                    ctf.splitPosition(
+                        IERC20(address(pusdc)),
+                        bytes32(0),
+                        CTHelpers.getConditionId(
+                            address(0), // oracle
+                            questionId,
+                            2 // outcomeCount
+                        ),
+                        Helpers._partition(),
+                        _amount
+                    );
+
+                    yesPositionIds[yesIndex] = _computePositionId(
+                        questionId,
+                        true
+                    );
+
+                    ++yesIndex;
+                }
+                ++outcomeIndex;
+            }
+        }
 
         // transfer no tokens to this contract
-        ctf.safeBatchTransferFrom(
-            msg.sender,
-            address(this),
-            noPositionIds,
-            Helpers._values(_amount),
-            ""
-        );
-
-        uint256 marketTokensLength = questionIds[_marketId].length;
-
-        i = 0;
-
-        uint256 yesTokensLength = marketTokensLength - noTokensLength;
-
-        bytes32[] memory yesQuestionIds = new bytes32[](yesTokensLength);
-
-        uint256 j = 0;
-        uint256 yesIndex;
-
-        // loop through all questionIds
-        while (i < marketTokensLength) {
-            // loop through all no questionIds
-            bool found;
-            while (j < noTokensLength) {
-                // if the questionId is not a no questionId, then it is a yes questionId
-                if (questionIds[_marketId][i] == _questionIds[j]) {
-                    found = true;
-                    break;
-                }
-                ++j;
-            }
-            if (found == true) {
-                yesQuestionIds[yesIndex] = questionIds[_marketId][i];
-                yesIndex++;
-            }
-            ++i;
-        }
-
-        // split all positions with fake pusdc
-        // to-do: add mint of pusdc
-        pusdc.mint(_amount);
-
-        i = 0;
-        while (i < yesTokensLength) {
-            ctf.splitPosition(
-                IERC20(address(pusdc)),
-                bytes32(0),
-                CTHelpers.getConditionId(
-                    address(0), // oracle
-                    yesQuestionIds[i],
-                    2
-                ),
-                Helpers._partition(),
-                _amount
+        {
+            ctf.safeBatchTransferFrom(
+                msg.sender,
+                address(this),
+                noPositionIds,
+                Helpers._values(_amount),
+                ""
             );
         }
 
-        uint256[] memory yesPositionIds = _yesPositionIds(yesQuestionIds);
-
-        ctf.safeBatchTransferFrom(
-            address(this),
-            msg.sender,
-            yesPositionIds,
-            Helpers._values(_amount),
-            ""
-        );
+        // transfer yes tokens to sender
+        {
+            ctf.safeBatchTransferFrom(
+                address(this),
+                msg.sender,
+                yesPositionIds,
+                Helpers._values(_amount),
+                ""
+            );
+        }
     }
 
-    function _yesPositionIds(
-        bytes32[] memory _questionIds
-    ) internal view returns (uint256[] memory) {
-        uint256[] memory positionIds = new uint256[](_questionIds.length);
-        uint256 i;
-        uint256 length = _questionIds.length;
+    function _computePositionId(
+        bytes32 _questionId,
+        bool _outcome
+    ) internal view returns (uint256) {
+        bytes32 conditionId = CTHelpers.getConditionId(
+            address(0), // oracle
+            _questionId,
+            2 // outcome count is always 2
+        );
 
-        while (i < length) {
-            bytes32 conditionId = CTHelpers.getConditionId(
-                address(0), // oracle
-                _questionIds[i],
-                2
-            );
-            bytes32 collectionId = CTHelpers.getCollectionId(
-                parentCollectionId,
-                conditionId,
-                1
-            );
-            positionIds[i] = CTHelpers.getPositionId(
-                address(pusdc),
-                collectionId
-            );
-        }
+        bytes32 collectionId = CTHelpers.getCollectionId(
+            bytes32(0),
+            conditionId,
+            _outcome ? 1 : 2 // 1 is yes, 2 is no
+        );
 
-        return positionIds;
+        uint256 positionId = CTHelpers.getPositionId(
+            address(pusdc),
+            collectionId
+        );
+
+        return positionId;
     }
 
-    function _noPositionIds(
-        bytes32[] memory _questionIds
-    ) internal view returns (uint256[] memory) {
-        uint256[] memory positionIds = new uint256[](_questionIds.length);
-        uint256 i;
-        uint256 length = _questionIds.length;
-
-        while (i < length) {
-            bytes32 conditionId = CTHelpers.getConditionId(
-                address(0), // oracle
-                _questionIds[i],
-                2
-            );
-            bytes32 collectionId = CTHelpers.getCollectionId(
-                parentCollectionId,
-                conditionId,
-                2
-            );
-            positionIds[i] = CTHelpers.getPositionId(
-                address(pusdc),
-                collectionId
-            );
-        }
-
-        return positionIds;
+    function _computeQuestionId(
+        bytes32 _marketId,
+        uint256 _outcomeIndex
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(_marketId, _outcomeIndex));
     }
 
     function onERC1155Received(
