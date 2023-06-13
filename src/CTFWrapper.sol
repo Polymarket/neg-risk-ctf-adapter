@@ -23,6 +23,9 @@ contract CTFWrapper is IERC1155TokenReceiver {
     bytes32 constant parentCollectionId = bytes32(0);
 
     // marketId => questionIds
+    // since questionIds are a function of conditionIds,
+    // we only need to store the length !
+    // hashing is cheaper than sloading
     mapping(bytes32 => bytes32[]) public questionIds;
     // questionId => marketId
     mapping(bytes32 => bytes32) public marketIds;
