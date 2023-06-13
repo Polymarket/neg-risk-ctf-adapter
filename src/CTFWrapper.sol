@@ -36,7 +36,7 @@ contract CTFWrapper is IERC1155TokenReceiver {
     constructor(address _ctf, address _usdc) {
         ctf = IConditionalTokens(_ctf);
         usdc = IERC20(_usdc);
-        pusdc = new PUSDC(_usdc);
+        pusdc = new PUSDC(address(this), _usdc);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -161,6 +161,7 @@ contract CTFWrapper is IERC1155TokenReceiver {
 
         // split all positions with fake pusdc
         // to-do: add mint of pusdc
+        pusdc.mint(_amount);
 
         i = 0;
         while (i < yesTokensLength) {
