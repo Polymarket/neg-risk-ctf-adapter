@@ -36,4 +36,11 @@ library Helpers {
         partition[1] = 2;
         return partition;
     }
+
+    function _payouts(bool _outcome) internal pure returns (uint256[] memory) {
+        uint256[] memory partition = new uint256[](2);
+        partition[0] = _outcome ? 1 : 0;
+        partition[1] = _outcome ? 0 : 1;
+        return partition;
+    }
 }
