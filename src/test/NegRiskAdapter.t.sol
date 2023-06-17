@@ -16,6 +16,6 @@ contract NegRiskAdapterTest is TestHelper {
     function setUp() public {
         address ctf = DeployLib.deployConditionalTokens();
         usdc = new USDC();
-        nrAdapter = new NegRiskAdapter(ctf, address(usdc));
+        nrAdapter = new NegRiskAdapter(ctf, address(usdc), address(0));
     }
 }
