@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {IConditionalTokens} from "./interfaces/IConditionalTokens.sol";
 import {ERC1155TokenReceiver} from "../lib/solmate/src/tokens/ERC1155.sol";
-import {IERC1155TokenReceiver} from "./interfaces/IERC1155TokenReceiver.sol";
+// import {IERC1155TokenReceiver} from "./interfaces/IERC1155TokenReceiver.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {WrappedCollateral} from "./WrappedCollateral.sol";
 import {Helpers} from "./libraries/Helpers.sol";
@@ -44,10 +44,11 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
     IConditionalTokens public immutable ctf;
     IERC20 public immutable col;
     WrappedCollateral public immutable wcol;
+    address public immutable vault;
+
     address public constant noTokenBurnAddress =
         address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
-    address public constant vault =
-        address(bytes20(bytes32(keccak256("VAULT"))));
+
     uint256 public constant feeDenominator = 1_00_00;
 
     // marketId => oracle
@@ -65,10 +66,13 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
 
     /// @param _ctf  - ConditionalTokens address
     /// @param _collateral - collateral address
-    constructor(address _ctf, address _collateral) {
+    constructor(address _ctf, address _collateral, address _vault) {
         ctf = IConditionalTokens(_ctf);
         col = IERC20(_collateral);
-        wcol = new WrappedCollateral(address(col), col.decimals());
+        vault = _vault;
+
+        wcol = new WrappedCollateral(_collateral, col.decimals());
+        wcol.approve(_ctf, type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -373,12 +377,12 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
                 Helpers._values(_amount - amountOut),
                 ""
             );
-
-            uint256 multiplier = (noPositionIds.length - 1);
-
-            wcol.release(msg.sender, multiplier * amountOut);
-            wcol.release(vault, multiplier * feeAmount);
         }
+
+        uint256 multiplier = (noPositionIds.length - 1);
+
+        wcol.release(msg.sender, multiplier * amountOut);
+        wcol.release(vault, multiplier * feeAmount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -427,15 +431,6 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         emit QuestionPrepared(questionId, _marketId, index, oracle, _data);
 
         return index;
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                                 ADMIN
-    //////////////////////////////////////////////////////////////*/
-
-    // to-do: onlyAdmin
-    function withdrawFees(uint256 _amount) external {
-        col.transfer(msg.sender, _amount);
     }
 
     /*//////////////////////////////////////////////////////////////
