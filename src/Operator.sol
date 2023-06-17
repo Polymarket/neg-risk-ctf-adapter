@@ -3,10 +3,26 @@ pragma solidity 0.8.20;
 
 import {NegRiskAdapter} from "./NegRiskAdapter.sol";
 import {IUmaCtfAdapter} from "./interfaces/IUmaCtfAdapter.sol";
+import {Auth} from "./modules/Auth.sol";
 
-contract Operator {
+interface IOperatorEE {
+    error OnlyUmaAdapter();
+    error OnlyNegRiskAdapter();
+}
+
+contract Operator is IOperatorEE, Auth {
     NegRiskAdapter immutable nrAdapter;
     IUmaCtfAdapter immutable umaAdapter;
+
+    modifier onlyUmaAdapter() {
+        if (msg.sender != address(umaAdapter)) revert OnlyUmaAdapter();
+        _;
+    }
+
+    modifier onlyNegRiskAdapter() {
+        if (msg.sender != address(nrAdapter)) revert OnlyNegRiskAdapter();
+        _;
+    }
 
     // requestId => marketId
     mapping(bytes32 => bytes32) public marketIds;
@@ -18,16 +34,22 @@ contract Operator {
         umaAdapter = IUmaCtfAdapter(_umaAdapter);
     }
 
+    function prepareMarket(
+        bytes memory _data
+    ) external onlyAdmin returns (bytes32) {
+        return nrAdapter.prepareMarket(_data);
+    }
+
     function prepareQuestion(
         bytes32 _marketId,
-        string calldata _metadata,
+        bytes calldata _data,
         bytes calldata _ancillaryData,
         address _rewardToken,
         uint256 _reward,
         uint256 _proposalBond,
         uint256 _liveness
-    ) external {
-        uint256 index = nrAdapter.prepareQuestion(_marketId, _metadata);
+    ) external onlyAdmin {
+        uint256 index = nrAdapter.prepareQuestion(_marketId, _data);
         bytes32 requestId = umaAdapter.initialize(
             _ancillaryData,
             _rewardToken,
@@ -44,16 +66,16 @@ contract Operator {
         address oracle,
         bytes32 requestId,
         uint256 outcomeSlotCount
-    ) external {
+    ) external onlyNegRiskAdapter {
         // no-op
     }
 
     function reportPayouts(
         bytes32 _requestId,
         uint256[] calldata _payouts
-    ) external {
+    ) external onlyUmaAdapter {
         uint256 payout0 = _payouts[0];
-        uint256 payout1 = _payouts[0];
+        uint256 payout1 = _payouts[1];
 
         if (payout0 * payout1 != 0) {
             revert("Invalid payouts");

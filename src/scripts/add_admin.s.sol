@@ -2,16 +2,13 @@
 pragma solidity ^0.8.15;
 
 import {vm} from "../dev/libraries/Vm.sol";
-import {AddressLib} from "../dev/libraries/AddressLib.sol";
-
-import {Adapter} from "../Adapter.sol";
+import {IAuth} from "../interfaces/IAuth.sol";
 
 contract add_admin {
-    function run(address _newAdmin) external {
-        Adapter adapter = Adapter(AddressLib.getAddress("adapter"));
+    function run(address _target, address _newAdmin) external {
+        IAuth target = IAuth(_target);
 
-        vm.startBroadcast();
-
-        adapter.addAdmin(_newAdmin);
+        vm.broadcast();
+        target.addAdmin(_newAdmin);
     }
 }

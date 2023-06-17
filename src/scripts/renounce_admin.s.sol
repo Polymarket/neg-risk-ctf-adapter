@@ -2,16 +2,13 @@
 pragma solidity ^0.8.15;
 
 import {vm} from "../dev/libraries/Vm.sol";
-import {AddressLib} from "../dev/libraries/AddressLib.sol";
-
-import {Adapter} from "../Adapter.sol";
+import {IAuth} from "../interfaces/IAuth.sol";
 
 contract renounce_admin {
-    function run() external {
-        Adapter adapter = Adapter(AddressLib.getAddress("adapter"));
+    function run(address _target) external {
+        IAuth target = IAuth(_target);
 
-        vm.startBroadcast();
-
-        adapter.renounceAdmin();
+        vm.broadcast();
+        target.renounceAdmin();
     }
 }

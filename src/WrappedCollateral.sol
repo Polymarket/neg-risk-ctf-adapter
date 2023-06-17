@@ -8,8 +8,8 @@ interface IWrappedCollateralEE {
 }
 
 contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
-    address immutable owner;
-    address immutable underlying;
+    address public immutable owner;
+    address public immutable underlying;
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert OnlyOwner();
@@ -50,7 +50,7 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
         _mint(msg.sender, _amount);
     }
 
-    function release(uint256 _amount) external onlyOwner {
-        ERC20(underlying).transfer(owner, _amount);
+    function release(address _to, uint256 _amount) external onlyOwner {
+        ERC20(underlying).transfer(_to, _amount);
     }
 }

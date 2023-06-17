@@ -6,9 +6,9 @@ import {ERC1155TokenReceiver} from "../lib/solmate/src/tokens/ERC1155.sol";
 import {IERC1155TokenReceiver} from "./interfaces/IERC1155TokenReceiver.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {WrappedCollateral} from "./WrappedCollateral.sol";
-import {CTHelpers} from "./libraries/CTHelpers.sol";
 import {Helpers} from "./libraries/Helpers.sol";
 import {Admin} from "./modules/Admin.sol";
+import {CTHelpers} from "./libraries/CTHelpers.sol";
 
 interface INegRiskAdapterEE {
     error IndexOutOfBounds();
@@ -19,12 +19,18 @@ interface INegRiskAdapterEE {
     error LengthMismatch();
     error ResultsAlreadySet();
 
-    event MarketPrepared(bytes32 indexed marketId, string metadata);
+    event MarketPrepared(
+        bytes32 indexed marketId,
+        address indexed oracle,
+        bytes data
+    );
+
     event QuestionPrepared(
         bytes32 indexed questionId,
         bytes32 indexed marketId,
         uint256 index,
-        string metadata
+        address indexed oracle,
+        bytes data
     );
 }
 
@@ -38,6 +44,11 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
     IConditionalTokens public immutable ctf;
     IERC20 public immutable col;
     WrappedCollateral public immutable wcol;
+    address public constant noTokenBurnAddress =
+        address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
+    address public constant vault =
+        address(bytes20(bytes32(keccak256("VAULT"))));
+    uint256 public constant feeDenominator = 1_00_00;
 
     // marketId => oracle
     mapping(bytes32 => address) public oracles;
@@ -58,7 +69,50 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         ctf = IConditionalTokens(_ctf);
         col = IERC20(_collateral);
         wcol = new WrappedCollateral(address(col), col.decimals());
-        wcol.approve(address(wcol), type(uint256).max);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                  IDS
+    //////////////////////////////////////////////////////////////*/
+
+    function computeMarketId(
+        address _oracle,
+        bytes memory _data
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encode(_oracle, _data));
+    }
+
+    function computeQuestionId(
+        bytes32 _marketId,
+        uint256 _outcomeIndex
+    ) public pure returns (bytes32) {
+        unchecked {
+            return bytes32(uint256(_marketId) + _outcomeIndex);
+        }
+    }
+
+    function computePositionId(
+        bytes32 _questionId,
+        bool _outcome
+    ) internal view returns (uint256) {
+        bytes32 conditionId = CTHelpers.getConditionId(
+            address(this), // oracle
+            _questionId,
+            2 // outcome count is always 2
+        );
+
+        bytes32 collectionId = CTHelpers.getCollectionId(
+            bytes32(0),
+            conditionId,
+            _outcome ? 1 : 2 // 1 is yes, 2 is no
+        );
+
+        uint256 positionId = CTHelpers.getPositionId(
+            address(wcol),
+            collectionId
+        );
+
+        return positionId;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -224,46 +278,6 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
     }
 
     /*//////////////////////////////////////////////////////////////
-                            PREPARE QUESTION
-    //////////////////////////////////////////////////////////////*/
-
-    function prepareQuestion(
-        bytes32 _marketId,
-        string memory _metadata
-    ) external returns (uint256) {
-        if (oracles[_marketId] == address(0)) {
-            revert MarketNotPrepared();
-        }
-
-        uint256 index = questionCounts[_marketId];
-        bytes32 questionId = _computeQuestionId(_marketId, index);
-
-        ++questionCounts[_marketId];
-
-        ctf.prepareCondition(address(this), questionId, 2);
-
-        emit QuestionPrepared(questionId, _marketId, index, _metadata);
-
-        return index;
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                             PREPARE MARKET
-    //////////////////////////////////////////////////////////////*/
-
-    function prepareMarket(address _oracle, string memory _metadata) external {
-        bytes32 _marketId = _computeMarketId(_oracle, _metadata);
-
-        if (oracles[_marketId] != address(0)) {
-            revert MarketAlreadyPrepared();
-        }
-
-        oracles[_marketId] = _oracle;
-
-        emit MarketPrepared(_marketId, _metadata);
-    }
-
-    /*//////////////////////////////////////////////////////////////
                             CONVERT POSITION
     //////////////////////////////////////////////////////////////*/
 
@@ -276,54 +290,30 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
     ) external {
         uint256 questionCount = questionCounts[_marketId];
 
-        // all positions is 2 ** questionCount - 1
-        if (_indexSet >= 2 ** questionCount) {
+        if (_indexSet >> questionCount > 0) {
             revert IndexOutOfBounds();
         }
 
-        uint256 noPositionsLength;
+        uint256[] memory yesPositionIds;
+        uint256[] memory noPositionIds;
 
-        // count no positions
+        wcol.mint(questionCount * _amount);
+
         {
-            uint256 indexSet = _indexSet;
-            while (indexSet > 0) {
-                noPositionsLength += indexSet & 1;
-                indexSet >>= 1;
-            }
-        }
-
-        if (noPositionsLength < 2) {
-            revert IndexSetTooSmall();
-        }
-
-        uint256 yesPositionsLength = questionCount - noPositionsLength;
-
-        uint256[] memory yesPositionIds = new uint256[](yesPositionsLength);
-        uint256[] memory noPositionIds = new uint256[](noPositionsLength);
-
-        // split yes conditions
-        // and compute positionIds
-        {
-            wcol.mint(yesPositionsLength * _amount);
+            uint256[] memory positionIds = new uint256[](questionCount + 1);
 
             uint256 index;
             uint256 noIndex;
-            uint256 yesIndex;
+            uint256 yesIndex = questionCount;
 
             while (index < questionCount) {
-                bytes32 questionId = _computeQuestionId(_marketId, index);
-
+                bytes32 questionId = computeQuestionId(_marketId, index);
                 if (_indexSet & (1 << index) == 1) {
                     // NO
-                    noPositionIds[noIndex] = _computePositionId(
-                        questionId,
-                        false
-                    );
-
+                    positionIds[noIndex] = computePositionId(questionId, false);
                     ++noIndex;
                 } else {
                     // YES
-                    // for each YES position, split complete sets
                     ctf.splitPosition(
                         IERC20(address(wcol)),
                         bytes32(0),
@@ -335,45 +325,108 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
                         Helpers._partition(),
                         _amount
                     );
-
-                    yesPositionIds[yesIndex] = _computePositionId(
-                        questionId,
-                        true
-                    );
-
-                    ++yesIndex;
+                    positionIds[yesIndex] = computePositionId(questionId, true);
+                    --yesIndex;
                 }
-                ++index;
+            }
+
+            uint256 yesPositionsLength = questionCount - noIndex;
+
+            assembly {
+                noPositionIds := positionIds
+                mstore(noPositionIds, noIndex)
+
+                yesPositionIds := add(positionIds, add(noIndex, 0x20))
+                mstore(yesPositionIds, yesPositionsLength)
             }
         }
 
-        // transfer no tokens from the sender
+        wcol.burn(noPositionIds.length * _amount);
+
         {
             ctf.safeBatchTransferFrom(
                 msg.sender,
-                address(this),
+                noTokenBurnAddress,
                 noPositionIds,
                 Helpers._values(_amount),
                 ""
             );
         }
 
+        uint256 amountOut = (_amount * feeBips[_marketId]) / 1_00_00;
+        uint256 feeAmount = _amount - amountOut;
+
         // transfer yes tokens to sender
-        if (yesPositionsLength > 0) {
+        if (yesPositionIds.length > 0) {
             ctf.safeBatchTransferFrom(
                 address(this),
                 msg.sender,
                 yesPositionIds,
-                Helpers._values(_amount),
+                Helpers._values(amountOut),
                 ""
             );
+
+            ctf.safeBatchTransferFrom(
+                address(this),
+                vault,
+                yesPositionIds,
+                Helpers._values(_amount - amountOut),
+                ""
+            );
+
+            uint256 multiplier = (noPositionIds.length - 1);
+
+            wcol.release(msg.sender, multiplier * amountOut);
+            wcol.release(vault, multiplier * feeAmount);
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                             PREPARE MARKET
+    //////////////////////////////////////////////////////////////*/
+
+    function prepareMarket(bytes memory _data) external returns (bytes32) {
+        address oracle = msg.sender;
+        bytes32 marketId = computeMarketId(oracle, _data);
+
+        if (oracles[marketId] != address(0)) {
+            revert MarketAlreadyPrepared();
         }
 
-        uint256 collateralAmountOut = (noPositionsLength - 1) * _amount;
-        uint256 fee = (collateralAmountOut * feeBips[_marketId]) / 1_00_00;
+        oracles[marketId] = oracle;
+        emit MarketPrepared(marketId, oracle, _data);
 
-        wcol.release(collateralAmountOut);
-        col.transfer(msg.sender, collateralAmountOut - fee);
+        return marketId;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            PREPARE QUESTION
+    //////////////////////////////////////////////////////////////*/
+
+    function prepareQuestion(
+        bytes32 _marketId,
+        bytes memory _data
+    ) external returns (uint256) {
+        address oracle = oracles[_marketId];
+
+        if (oracle == address(0)) {
+            revert MarketNotPrepared();
+        }
+
+        if (oracle != msg.sender) {
+            revert OnlyOracle();
+        }
+
+        uint256 index = questionCounts[_marketId];
+        bytes32 questionId = computeQuestionId(_marketId, index);
+
+        ++questionCounts[_marketId];
+
+        ctf.prepareCondition(address(this), questionId, 2);
+
+        emit QuestionPrepared(questionId, _marketId, index, oracle, _data);
+
+        return index;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -399,47 +452,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
             results[_marketId] = 1 << _index;
         }
 
-        bytes32 questionId = _computeQuestionId(_marketId, _index);
+        bytes32 questionId = computeQuestionId(_marketId, _index);
         ctf.reportPayouts(questionId, Helpers._payouts(_outcome));
-    }
-
-    function _computePositionId(
-        bytes32 _questionId,
-        bool _outcome
-    ) internal view returns (uint256) {
-        bytes32 conditionId = CTHelpers.getConditionId(
-            address(this), // oracle
-            _questionId,
-            2 // outcome count is always 2
-        );
-
-        bytes32 collectionId = CTHelpers.getCollectionId(
-            bytes32(0),
-            conditionId,
-            _outcome ? 1 : 2 // 1 is yes, 2 is no
-        );
-
-        uint256 positionId = CTHelpers.getPositionId(
-            address(wcol),
-            collectionId
-        );
-
-        return positionId;
-    }
-
-    function _computeMarketId(
-        address _oracle,
-        string memory _metadata
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(_oracle, _metadata));
-    }
-
-    function _computeQuestionId(
-        bytes32 _marketId,
-        uint256 _outcomeIndex
-    ) internal pure returns (bytes32) {
-        unchecked {
-            return _marketId ^ bytes32(_outcomeIndex + 1);
-        }
     }
 }
