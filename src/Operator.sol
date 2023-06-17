@@ -24,10 +24,8 @@ contract Operator is IOperatorEE, Auth {
         _;
     }
 
-    // requestId => marketId
-    mapping(bytes32 => bytes32) public marketIds;
-    // requestId => questionIndex
-    mapping(bytes32 => uint256) public questionIndices;
+    // requestId => questionId
+    mapping(bytes32 => bytes32) public questionIds;
 
     constructor(address _umaAdapter, address _nrAdapter) {
         nrAdapter = NegRiskAdapter(_nrAdapter);
@@ -49,7 +47,7 @@ contract Operator is IOperatorEE, Auth {
         uint256 _proposalBond,
         uint256 _liveness
     ) external onlyAdmin {
-        uint256 index = nrAdapter.prepareQuestion(_marketId, _data);
+        bytes32 questionId = nrAdapter.prepareQuestion(_marketId, _data);
         bytes32 requestId = umaAdapter.initialize(
             _ancillaryData,
             _rewardToken,
@@ -58,8 +56,7 @@ contract Operator is IOperatorEE, Auth {
             _liveness
         );
 
-        marketIds[requestId] = _marketId;
-        questionIndices[requestId] = index;
+        questionIds[requestId] = questionId;
     }
 
     function prepareCondition(
@@ -81,10 +78,8 @@ contract Operator is IOperatorEE, Auth {
             revert("Invalid payouts");
         }
 
-        nrAdapter.reportOutcome(
-            marketIds[_requestId],
-            questionIndices[_requestId],
-            payout1 == 0 ? true : false
-        );
+        bytes32 questionId = questionIds[_requestId];
+
+        nrAdapter.reportOutcome(questionId, payout1 == 0 ? true : false);
     }
 }
