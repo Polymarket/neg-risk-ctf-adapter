@@ -5,12 +5,12 @@ import {NegRiskAdapter} from "./NegRiskAdapter.sol";
 import {IUmaCtfAdapter} from "./interfaces/IUmaCtfAdapter.sol";
 import {Auth} from "./modules/Auth.sol";
 
-interface IOperatorEE {
+interface INegRiskOperatorEE {
     error OnlyUmaAdapter();
     error OnlyNegRiskAdapter();
 }
 
-contract Operator is IOperatorEE, Auth {
+contract NegRiskOperator is INegRiskOperatorEE, Auth {
     NegRiskAdapter immutable nrAdapter;
     IUmaCtfAdapter immutable umaAdapter;
 
@@ -33,9 +33,10 @@ contract Operator is IOperatorEE, Auth {
     }
 
     function prepareMarket(
-        bytes memory _data
+        bytes memory _data,
+        uint256 _feeBips
     ) external onlyAdmin returns (bytes32) {
-        return nrAdapter.prepareMarket(_data);
+        return nrAdapter.prepareMarket(_data, _feeBips);
     }
 
     function prepareQuestion(
@@ -60,9 +61,9 @@ contract Operator is IOperatorEE, Auth {
     }
 
     function prepareCondition(
-        address oracle,
-        bytes32 requestId,
-        uint256 outcomeSlotCount
+        address,
+        bytes32,
+        uint256
     ) external onlyNegRiskAdapter {
         // no-op
     }
