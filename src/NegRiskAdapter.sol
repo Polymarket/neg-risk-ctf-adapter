@@ -105,15 +105,9 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         bytes32 _questionId,
         bool _outcome
     ) internal view returns (uint256) {
-        bytes32 conditionId = CTHelpers.getConditionId(
-            address(this), // oracle
-            _questionId,
-            2 // outcome count is always 2
-        );
-
         bytes32 collectionId = CTHelpers.getCollectionId(
             bytes32(0),
-            conditionId,
+            _getConditionId(_questionId),
             _outcome ? 1 : 2 // 1 is yes, 2 is no
         );
 
@@ -278,17 +272,8 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
                     ++noIndex;
                 } else {
                     // YES
-                    ctf.splitPosition(
-                        IERC20(address(wcol)),
-                        bytes32(0),
-                        CTHelpers.getConditionId(
-                            address(this), // oracle
-                            questionId,
-                            2 // outcomeCount
-                        ),
-                        Helpers._partition(),
-                        _amount
-                    );
+
+                    _splitPosition(_getConditionId(questionId), _amount);
                     positionIds[yesIndex] = computePositionId(questionId, true);
                     --yesIndex;
                 }
@@ -427,5 +412,30 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
 
         bytes32 questionId = computeQuestionId(marketId, questionIndex);
         ctf.reportPayouts(questionId, Helpers._payouts(_outcome));
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                INTERNAL
+    //////////////////////////////////////////////////////////////*/
+
+    function _splitPosition(bytes32 _conditionId, uint256 _amount) internal {
+        ctf.splitPosition(
+            IERC20(address(wcol)),
+            bytes32(0),
+            _conditionId,
+            Helpers._partition(),
+            _amount
+        );
+    }
+
+    function _getConditionId(
+        bytes32 _questionId
+    ) internal view returns (bytes32) {
+        return
+            CTHelpers.getConditionId(
+                address(this), // oracle
+                _questionId,
+                2 // outcomeCount
+            );
     }
 }
