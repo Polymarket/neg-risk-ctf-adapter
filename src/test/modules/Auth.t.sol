@@ -23,6 +23,11 @@ contract AuthTest is TestHelper, IAuthEE {
         assertEq(auth.admins(alice), 1);
     }
 
+    function test_NotAdmin() public {
+        assertFalse(auth.isAdmin(brian));
+        assertEq(auth.admins(brian), 0);
+    }
+
     function test_OnlyAdmin() public {
         vm.prank(alice);
         auth.useOnlyAdmin();

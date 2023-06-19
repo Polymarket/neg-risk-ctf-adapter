@@ -51,7 +51,8 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
 
     uint256 public constant feeDenominator = 1_00_00;
-    bytes32 constant ID_MASK = bytes32(uint256(type(uint8).max));
+
+    bytes32 constant MASK = bytes32(type(uint256).max) << 8;
 
     // marketId => marketData
     mapping(bytes32 => MarketData) public marketData;
@@ -79,7 +80,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         address _oracle,
         bytes memory _data
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode(_oracle, _data)) << 8;
+        return keccak256(abi.encode(_oracle, _data)) & MASK;
     }
 
     function computeQuestionId(
@@ -92,13 +93,13 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
     }
 
     function getMarketId(bytes32 _questionId) public pure returns (bytes32) {
-        return _questionId & ~ID_MASK;
+        return _questionId & MASK;
     }
 
     function getQuestionIndex(
         bytes32 _questionId
     ) public pure returns (uint256) {
-        return uint256(_questionId & ID_MASK);
+        return uint256(_questionId & ~MASK);
     }
 
     function computePositionId(
@@ -272,7 +273,6 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
                     ++noIndex;
                 } else {
                     // YES
-
                     _splitPosition(_getConditionId(questionId), _amount);
                     positionIds[yesIndex] = computePositionId(questionId, true);
                     --yesIndex;

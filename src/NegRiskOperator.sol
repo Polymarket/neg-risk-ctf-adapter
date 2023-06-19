@@ -19,13 +19,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         _;
     }
 
-    modifier onlyNegRiskAdapter() {
-        if (msg.sender != address(nrAdapter)) revert OnlyNegRiskAdapter();
-        _;
-    }
-
-    // requestId => questionId
-    mapping(bytes32 => bytes32) public questionIds;
+    mapping(bytes32 _requestId => bytes32 questionId) public questionIds;
 
     constructor(address _umaAdapter, address _nrAdapter) {
         nrAdapter = NegRiskAdapter(_nrAdapter);
@@ -56,16 +50,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
             _proposalBond,
             _liveness
         );
-
         questionIds[requestId] = questionId;
-    }
-
-    function prepareCondition(
-        address,
-        bytes32,
-        uint256
-    ) external onlyNegRiskAdapter {
-        // no-op
     }
 
     function reportPayouts(
@@ -83,4 +68,6 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
         nrAdapter.reportOutcome(questionId, payout1 == 0 ? true : false);
     }
+
+    fallback() external {}
 }

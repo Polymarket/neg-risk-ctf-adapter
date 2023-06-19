@@ -9,11 +9,13 @@ abstract contract TestHelper is Test {
     address public immutable alice;
     address public immutable brian;
     address public immutable carly;
+    address public immutable devin;
 
     constructor() {
         alice = _getAndLabelAddress("alice");
         brian = _getAndLabelAddress("brian");
         carly = _getAndLabelAddress("carly");
+        devin = _getAndLabelAddress("devin");
     }
 
     function _getAndLabelAddress(
