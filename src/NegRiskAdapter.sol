@@ -275,7 +275,8 @@ contract NegRiskAdapter is
 
             while (index < questionCount) {
                 bytes32 questionId = computeQuestionId(_marketId, index);
-                if ((_indexSet & (1 << index)) == 1) {
+
+                if ((_indexSet & (1 << index)) > 0) {
                     // NO
                     positionIds[noIndex] = computePositionId(questionId, false);
 
@@ -284,6 +285,7 @@ contract NegRiskAdapter is
                     }
                 } else {
                     // YES
+
                     _splitPosition(getConditionId(questionId), _amount);
                     positionIds[yesIndex] = computePositionId(questionId, true);
 
@@ -300,7 +302,7 @@ contract NegRiskAdapter is
                 noPositionIds := positionIds
                 mstore(noPositionIds, noIndex)
 
-                yesPositionIds := add(positionIds, add(noIndex, 0x20))
+                yesPositionIds := add(positionIds, mul(add(noIndex, 1), 0x20))
                 mstore(yesPositionIds, yesPositionsLength)
             }
         }

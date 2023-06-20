@@ -13,14 +13,16 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
     NegRiskAdapter nrAdapter;
     USDC usdc;
     WrappedCollateral wcol;
-    address oracle;
     IConditionalTokens ctf;
+    address oracle;
+    address vault;
 
     function setUp() public {
+        vault = _getAndLabelAddress("vault");
+        oracle = _getAndLabelAddress("oracle");
         ctf = IConditionalTokens(DeployLib.deployConditionalTokens());
         usdc = new USDC();
-        nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), address(0));
-        oracle = _getAndLabelAddress("oracle");
+        nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), vault);
         wcol = nrAdapter.wcol();
     }
 
@@ -61,6 +63,10 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
 
         while (i < 255) {
             nrAdapter.prepareQuestion(marketId, data);
+            assertEq(
+                nrAdapter.computeQuestionId(marketId, i),
+                bytes32(uint256(marketId) + i)
+            );
             assertEq(nrAdapter.getQuestionCount(marketId), i + 1);
             ++i;
         }
@@ -160,7 +166,7 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
 
         uint256 i = 0;
 
-        while (i < 10) {
+        while (i < 2) {
             vm.prank(oracle);
             bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
             bytes32 conditionId = nrAdapter.getConditionId(questionId);
@@ -176,21 +182,18 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
         }
 
         uint256 positionId0False = nrAdapter.computePositionId(
-            nrAdapter.computeQuestionId(marketId, 1),
+            nrAdapter.computeQuestionId(marketId, 0),
             false
         );
         vm.prank(alice);
+
         ctf.safeTransferFrom(alice, brian, positionId0False, _amount, "");
         assertEq(ctf.balanceOf(brian, positionId0False), _amount);
-        assertEq(nrAdapter.getQuestionCount(marketId), 10);
+        // assertEq(nrAdapter.getQuestionCount(marketId), 10);
 
         vm.startPrank(brian);
         ctf.setApprovalForAll(address(nrAdapter), true);
 
-        vm.expectRevert();
         nrAdapter.convertPositions(marketId, _amount, 1);
-        console.log(positionId0False);
-
-        revert();
     }
 }

@@ -14,14 +14,16 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
     NegRiskAdapter nrAdapter;
     USDC usdc;
     WrappedCollateral wcol;
-    address oracle;
     IConditionalTokens ctf;
+    address oracle;
+    address vault;
 
     function setUp() public {
+        vault = _getAndLabelAddress("vault");
+        oracle = _getAndLabelAddress("oracle");
         ctf = IConditionalTokens(DeployLib.deployConditionalTokens());
         usdc = new USDC();
-        nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), address(0));
-        oracle = _getAndLabelAddress("oracle");
+        nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), vault);
     }
 
     function test_snap_prepareMarket() public {
@@ -102,6 +104,44 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         // no balances should zero before _or_ after snap
         snapStart("NegRiskAdapter_mergePositions");
         nrAdapter.mergePositions(conditionId, amount);
+        snapEnd();
+    }
+
+    function test_snap_convertPositions_1() public {
+        uint256 amount = 10_000_000;
+        bytes memory data = new bytes(0);
+        uint256 feeBips = 0;
+
+        // prepare question
+        vm.prank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+
+        uint256 i = 0;
+        uint256 questionCount = 5;
+        while (i < questionCount) {
+            vm.prank(oracle);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // split position to alice
+            vm.startPrank(alice);
+            usdc.mint(alice, amount);
+            usdc.approve(address(nrAdapter), amount);
+            nrAdapter.splitPosition(conditionId, amount);
+            vm.stopPrank();
+
+            ++i;
+        }
+
+        uint256 positionId0False = nrAdapter.computePositionId(
+            nrAdapter.computeQuestionId(marketId, 0),
+            false
+        );
+        vm.startPrank(alice);
+        ctf.setApprovalForAll(address(nrAdapter), true);
+
+        snapStart("NegRiskAdapter_convertPositions_1");
+        nrAdapter.convertPositions(marketId, amount, 1);
         snapEnd();
     }
 }
