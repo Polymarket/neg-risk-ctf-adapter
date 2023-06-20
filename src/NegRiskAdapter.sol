@@ -10,8 +10,6 @@ import {Admin} from "src/modules/Admin.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {MarketData, MarketDataManager} from "src/modules/MarketDataManager.sol";
 
-import {console} from "forge-std/Test.sol";
-
 interface INegRiskAdapterEE {
     error IndexOutOfBounds();
     error OnlyOracle();
@@ -160,7 +158,7 @@ contract NegRiskAdapter is
             address(this),
             msg.sender,
             Helpers._positionIds(address(wcol), _conditionId),
-            Helpers._values(_amount),
+            Helpers._values(2, _amount),
             ""
         );
     }
@@ -194,7 +192,7 @@ contract NegRiskAdapter is
             msg.sender,
             address(this),
             positionIds,
-            Helpers._values(_amount),
+            Helpers._values(2, _amount),
             ""
         );
 
@@ -247,7 +245,7 @@ contract NegRiskAdapter is
 
     /// @notice _indexSet looks like 0x0000....01101
     /// @notice the lsb is the _first_ question
-    function convertPosition(
+    function convertPositions(
         bytes32 _marketId,
         uint256 _amount,
         uint256 _indexSet
@@ -255,9 +253,13 @@ contract NegRiskAdapter is
         MarketData md = getMarketData(_marketId);
         uint256 questionCount = md.questionCount();
 
-        if (_indexSet >> questionCount > 0) {
+        if ((_indexSet >> questionCount) > 0) {
             revert IndexOutOfBounds();
         }
+
+        // to-do: add errors
+        if (_indexSet == 0) revert();
+        if (_amount == 0) revert();
 
         uint256[] memory yesPositionIds;
         uint256[] memory noPositionIds;
@@ -273,7 +275,7 @@ contract NegRiskAdapter is
 
             while (index < questionCount) {
                 bytes32 questionId = computeQuestionId(_marketId, index);
-                if (_indexSet & (1 << index) == 1) {
+                if ((_indexSet & (1 << index)) == 1) {
                     // NO
                     positionIds[noIndex] = computePositionId(questionId, false);
 
@@ -289,6 +291,7 @@ contract NegRiskAdapter is
                         --yesIndex;
                     }
                 }
+                ++index;
             }
 
             uint256 yesPositionsLength = questionCount - noIndex;
@@ -305,11 +308,12 @@ contract NegRiskAdapter is
         wcol.burn(noPositionIds.length * _amount);
 
         {
+            ctf.balanceOf(msg.sender, noPositionIds[0]);
             ctf.safeBatchTransferFrom(
                 msg.sender,
                 noTokenBurnAddress,
                 noPositionIds,
-                Helpers._values(_amount),
+                Helpers._values(noPositionIds.length, _amount),
                 ""
             );
         }
@@ -323,7 +327,7 @@ contract NegRiskAdapter is
                 address(this),
                 msg.sender,
                 yesPositionIds,
-                Helpers._values(amountOut),
+                Helpers._values(yesPositionIds.length, amountOut),
                 ""
             );
 
@@ -331,7 +335,7 @@ contract NegRiskAdapter is
                 address(this),
                 vault,
                 yesPositionIds,
-                Helpers._values(feeAmount),
+                Helpers._values(yesPositionIds.length, feeAmount),
                 ""
             );
         }

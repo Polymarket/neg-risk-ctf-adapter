@@ -31,7 +31,7 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         vm.startPrank(oracle);
 
         snapStart("NegRiskAdapter_prepareMarket");
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        nrAdapter.prepareMarket(data, feeBips);
         snapEnd();
     }
 

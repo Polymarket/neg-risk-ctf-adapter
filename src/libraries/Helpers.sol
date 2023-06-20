@@ -23,10 +23,19 @@ library Helpers {
         return positionIds;
     }
 
-    function _values(uint256 _value) internal pure returns (uint256[] memory) {
-        uint256[] memory values = new uint256[](2);
-        values[0] = _value;
-        values[1] = _value;
+    function _values(
+        uint256 _length,
+        uint256 _value
+    ) internal pure returns (uint256[] memory) {
+        uint256[] memory values = new uint256[](_length);
+        uint256 i;
+
+        // to-do: we can save gas using assembly here
+        // (no index checks)
+        while (i < _length) {
+            values[i] = _value;
+            ++i;
+        }
         return values;
     }
 

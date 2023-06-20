@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {TestHelper} from "src/dev/TestHelper.sol";
+import {TestHelper, console} from "src/dev/TestHelper.sol";
 
 import {NegRiskAdapter, INegRiskAdapterEE} from "src/NegRiskAdapter.sol";
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
@@ -81,19 +81,18 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
     function test_splitPosition(uint256 _amount) public {
         bytes memory data = new bytes(0);
         uint256 feeBips = 0;
-
         // prepare question
         vm.startPrank(oracle);
         bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
         bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
         bytes32 conditionId = nrAdapter.getConditionId(questionId);
         vm.stopPrank();
-
         // split position to alice
         vm.startPrank(alice);
         usdc.mint(alice, _amount);
         usdc.approve(address(nrAdapter), _amount);
         nrAdapter.splitPosition(conditionId, _amount);
+        vm.stopPrank();
 
         // check collateral balances
         assertEq(usdc.balanceOf(address(wcol)), _amount);
@@ -106,7 +105,6 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
             false
         );
         assertEq(ctf.balanceOf(alice, positionIdFalse), _amount);
-
         uint256 positionIdTrue = nrAdapter.computePositionId(questionId, true);
         assertEq(ctf.balanceOf(alice, positionIdTrue), _amount);
     }
@@ -148,5 +146,51 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
         assertEq(wcol.totalSupply(), 0);
         assertEq(ctf.balanceOf(brian, positionIdFalse), 0);
         assertEq(ctf.balanceOf(brian, positionIdTrue), 0);
+    }
+
+    function test_convertPositions(uint128 _amount) public {
+        vm.assume(_amount > 0);
+
+        bytes memory data = new bytes(0);
+        uint256 feeBips = 0;
+
+        // prepare question
+        vm.prank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+
+        uint256 i = 0;
+
+        while (i < 10) {
+            vm.prank(oracle);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // split position to alice
+            vm.startPrank(alice);
+            usdc.mint(alice, _amount);
+            usdc.approve(address(nrAdapter), _amount);
+            nrAdapter.splitPosition(conditionId, _amount);
+            vm.stopPrank();
+
+            ++i;
+        }
+
+        uint256 positionId0False = nrAdapter.computePositionId(
+            nrAdapter.computeQuestionId(marketId, 1),
+            false
+        );
+        vm.prank(alice);
+        ctf.safeTransferFrom(alice, brian, positionId0False, _amount, "");
+        assertEq(ctf.balanceOf(brian, positionId0False), _amount);
+        assertEq(nrAdapter.getQuestionCount(marketId), 10);
+
+        vm.startPrank(brian);
+        ctf.setApprovalForAll(address(nrAdapter), true);
+
+        vm.expectRevert();
+        nrAdapter.convertPositions(marketId, _amount, 1);
+        console.log(positionId0False);
+
+        revert();
     }
 }
