@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {TestHelper, console} from "src/dev/TestHelper.sol";
 import {Vault} from "src/Vault.sol";
 import {USDC} from "src/test/mock/USDC.sol";
-import {DeployLib} from "../dev/libraries/DeployLib.sol";
+import {DeployLib} from "src/dev/libraries/DeployLib.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";

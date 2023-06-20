@@ -27,11 +27,11 @@ contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
 
         vm.startPrank(alice);
 
-        snapStart("wrapped-collateral-mint");
+        snapStart("WrappedCollateral_mint");
         wcol.mint(amount);
         snapEnd();
 
-        snapStart("wrapped-collateral-burn");
+        snapStart("WrappedCollateral_burn");
         wcol.burn(amount);
         snapEnd();
 
@@ -46,11 +46,11 @@ contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
 
         usdc.approve(address(wcol), amount);
 
-        snapStart("wrapped-collateral-wrap");
+        snapStart("WrappedCollateral_wrap");
         wcol.wrap(brian, amount);
         snapEnd();
 
-        snapStart("wrapped-collateral-unwrap");
+        snapStart("WrappedCollateral_unwrap");
         wcol.unwrap(brian, amount);
         snapEnd();
 

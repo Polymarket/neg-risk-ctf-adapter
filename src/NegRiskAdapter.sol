@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {IConditionalTokens} from "./interfaces/IConditionalTokens.sol";
-import {ERC1155TokenReceiver} from "../lib/solmate/src/tokens/ERC1155.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
-import {WrappedCollateral} from "./WrappedCollateral.sol";
-import {Helpers} from "./libraries/Helpers.sol";
-import {Admin} from "./modules/Admin.sol";
-import {CTHelpers} from "./libraries/CTHelpers.sol";
-import {MarketData, MarketDataLib} from "./types/MarketData.sol";
+import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
+import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
+import {WrappedCollateral} from "src/WrappedCollateral.sol";
+import {Helpers} from "src/libraries/Helpers.sol";
+import {Admin} from "src/modules/Admin.sol";
+import {CTHelpers} from "src/libraries/CTHelpers.sol";
+import {MarketData, MarketDataManager} from "src/modules/MarketDataManager.sol";
+
+import {console} from "forge-std/Test.sol";
 
 interface INegRiskAdapterEE {
     error IndexOutOfBounds();
@@ -37,7 +39,11 @@ interface INegRiskAdapterEE {
 
 /// @title CTFWrapper
 /// @author Mike Shrieve (mike@polymarket.com)
-contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
+contract NegRiskAdapter is
+    INegRiskAdapterEE,
+    ERC1155TokenReceiver,
+    MarketDataManager
+{
     /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
@@ -52,10 +58,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
 
     uint256 public constant feeDenominator = 1_00_00;
 
-    bytes32 constant MASK = bytes32(type(uint256).max) << 8;
-
-    // marketId => marketData
-    mapping(bytes32 => MarketData) public marketData;
+    bytes32 private constant MASK = bytes32(type(uint256).max) << 8;
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -69,7 +72,10 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         vault = _vault;
 
         wcol = new WrappedCollateral(_collateral, col.decimals());
+
+        // approve the ctf to transfer wcol on our behalf
         wcol.approve(_ctf, type(uint256).max);
+        col.approve(address(wcol), type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -105,10 +111,10 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
     function computePositionId(
         bytes32 _questionId,
         bool _outcome
-    ) internal view returns (uint256) {
+    ) public view returns (uint256) {
         bytes32 collectionId = CTHelpers.getCollectionId(
             bytes32(0),
-            _getConditionId(_questionId),
+            getConditionId(_questionId),
             _outcome ? 1 : 2 // 1 is yes, 2 is no
         );
 
@@ -246,7 +252,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         uint256 _amount,
         uint256 _indexSet
     ) external {
-        MarketData md = marketData[_marketId];
+        MarketData md = getMarketData(_marketId);
         uint256 questionCount = md.questionCount();
 
         if (_indexSet >> questionCount > 0) {
@@ -270,12 +276,18 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
                 if (_indexSet & (1 << index) == 1) {
                     // NO
                     positionIds[noIndex] = computePositionId(questionId, false);
-                    ++noIndex;
+
+                    unchecked {
+                        ++noIndex;
+                    }
                 } else {
                     // YES
-                    _splitPosition(_getConditionId(questionId), _amount);
+                    _splitPosition(getConditionId(questionId), _amount);
                     positionIds[yesIndex] = computePositionId(questionId, true);
-                    --yesIndex;
+
+                    unchecked {
+                        --yesIndex;
+                    }
                 }
             }
 
@@ -345,13 +357,12 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         address oracle = msg.sender;
         bytes32 marketId = computeMarketId(oracle, _data);
 
-        MarketData md = marketData[marketId];
-
+        MarketData md = getMarketData(marketId);
         if (md.oracle() != address(0)) {
             revert MarketAlreadyPrepared();
         }
 
-        marketData[marketId] = MarketDataLib.initialize(oracle, _feeBips);
+        initializeMarket(marketId, oracle, _feeBips);
         emit MarketPrepared(marketId, oracle, _data);
 
         return marketId;
@@ -365,7 +376,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         bytes32 _marketId,
         bytes memory _data
     ) external returns (bytes32) {
-        MarketData md = marketData[_marketId];
+        MarketData md = getMarketData(_marketId);
         address oracle = md.oracle();
 
         if (oracle == address(0)) {
@@ -379,7 +390,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         uint256 index = md.questionCount();
         bytes32 questionId = computeQuestionId(_marketId, index);
 
-        md = md.incrementQuestionCount();
+        setMarketData(_marketId, md.incrementQuestionCount());
         ctf.prepareCondition(address(this), questionId, 2);
 
         emit QuestionPrepared(questionId, _marketId, index, oracle, _data);
@@ -395,7 +406,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         bytes32 marketId = getMarketId(_questionId);
         uint256 questionIndex = getQuestionIndex(_questionId);
 
-        MarketData md = marketData[marketId];
+        MarketData md = getMarketData(marketId);
 
         if (md.oracle() != msg.sender) {
             revert OnlyOracle();
@@ -428,9 +439,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver {
         );
     }
 
-    function _getConditionId(
-        bytes32 _questionId
-    ) internal view returns (bytes32) {
+    function getConditionId(bytes32 _questionId) public view returns (bytes32) {
         return
             CTHelpers.getConditionId(
                 address(this), // oracle

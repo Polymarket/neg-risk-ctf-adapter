@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
-
-import {console} from "forge-std/Test.sol";
+pragma solidity ^0.8.15;
 
 type MarketData is bytes32;
 
@@ -66,8 +64,7 @@ library MarketDataLib {
         return uint256(uint8(MarketData.unwrap(_d)[2]));
     }
 
-    function feeBips(MarketData _d) internal view returns (uint256) {
-        console.logBytes32(MarketData.unwrap(_d) << 24);
+    function feeBips(MarketData _d) internal pure returns (uint256) {
         return uint256(uint16(bytes2(MarketData.unwrap(_d) << 24)));
     }
 }
