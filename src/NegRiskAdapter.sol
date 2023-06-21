@@ -310,7 +310,6 @@ contract NegRiskAdapter is
         wcol.burn(noPositionIds.length * _amount);
 
         {
-            ctf.balanceOf(msg.sender, noPositionIds[0]);
             ctf.safeBatchTransferFrom(
                 msg.sender,
                 noTokenBurnAddress,

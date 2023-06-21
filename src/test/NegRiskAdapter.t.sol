@@ -154,24 +154,39 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
         assertEq(ctf.balanceOf(brian, positionIdTrue), 0);
     }
 
-    function test_convertPositions(uint128 _amount) public {
+    function test_convertPositions(
+        uint256 _a,
+        uint256 _b,
+        uint128 _amount
+    ) public {
         vm.assume(_amount > 0);
 
         bytes memory data = new bytes(0);
-        uint256 feeBips = 0;
+        // 10%
+        uint256 feeBips = 10_000;
 
-        // prepare question
+        uint256 questionCountMax = 16;
+        uint256 questionCount = bound(_a, 2, questionCountMax); // between 2 and 16 questions
+        uint256 indexSet = bound(_b, 1, (2 ** questionCount) - 1);
+        uint256 noPositionsCount;
+
+        // while (indexSet >> noPositionsCount > 0) {
+        //     ++noPositionsCount;
+        // }
+
+        // prepare market
         vm.prank(oracle);
         bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
 
         uint256 i = 0;
 
-        while (i < 2) {
+        // prepare questions and split initial liquidity to alice
+        while (i < questionCount) {
             vm.prank(oracle);
             bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
             bytes32 conditionId = nrAdapter.getConditionId(questionId);
 
-            // split position to alice
+            // // split position to alice
             vm.startPrank(alice);
             usdc.mint(alice, _amount);
             usdc.approve(address(nrAdapter), _amount);
@@ -181,19 +196,79 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
             ++i;
         }
 
-        uint256 positionId0False = nrAdapter.computePositionId(
-            nrAdapter.computeQuestionId(marketId, 0),
-            false
-        );
-        vm.prank(alice);
+        assertEq(nrAdapter.getQuestionCount(marketId), questionCount);
 
-        ctf.safeTransferFrom(alice, brian, positionId0False, _amount, "");
-        assertEq(ctf.balanceOf(brian, positionId0False), _amount);
-        // assertEq(nrAdapter.getQuestionCount(marketId), 10);
+        // send no positions to brian
+        {
+            i = 0;
+
+            while (i < questionCount) {
+                if (indexSet & (1 << i) > 0) {
+                    uint256 positionId = nrAdapter.computePositionId(
+                        nrAdapter.computeQuestionId(marketId, i),
+                        false
+                    );
+                    ctf.balanceOf(alice, positionId);
+                    vm.prank(alice);
+                    ctf.safeTransferFrom(alice, brian, positionId, _amount, "");
+                    assertEq(ctf.balanceOf(brian, positionId), _amount);
+                }
+                ++i;
+            }
+        }
 
         vm.startPrank(brian);
         ctf.setApprovalForAll(address(nrAdapter), true);
 
-        nrAdapter.convertPositions(marketId, _amount, 1);
+        // convert positions
+        nrAdapter.convertPositions(marketId, _amount, indexSet);
+
+        // check balances
+        {
+            uint256 feeAmount = (_amount * feeBips) / 1_00_00;
+            uint256 amountOut = _amount - feeAmount;
+            uint256 noPositionsCount;
+            i = 0;
+            while (i < questionCount) {
+                if (indexSet & (1 << i) > 0) {
+                    // NO
+
+                    uint256 positionId = nrAdapter.computePositionId(
+                        nrAdapter.computeQuestionId(marketId, i),
+                        false
+                    );
+
+                    // brian has no more of this no token
+                    assertEq(ctf.balanceOf(brian, positionId), 0);
+                    // they are all at the no token burn address
+                    assertEq(
+                        ctf.balanceOf(
+                            nrAdapter.noTokenBurnAddress(),
+                            positionId
+                        ),
+                        _amount
+                    );
+                    ++noPositionsCount;
+                } else {
+                    // YES
+                    uint256 positionId = nrAdapter.computePositionId(
+                        nrAdapter.computeQuestionId(marketId, i),
+                        true
+                    );
+
+                    // brian has _amount of each yes token, after fees
+                    assertEq(
+                        ctf.balanceOf(brian, positionId),
+                        _amount - feeAmount
+                    );
+                    // vault has the rest of yes tokens as fees
+                    assertEq(ctf.balanceOf(vault, positionId), feeAmount);
+                }
+                ++i;
+            }
+
+            // brian should have (noPositionsCount -1) * amountOut USDC
+            assertEq(usdc.balanceOf(brian), (noPositionsCount - 1) * amountOut);
+        }
     }
 }
