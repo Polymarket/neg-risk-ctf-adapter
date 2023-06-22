@@ -170,10 +170,6 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
         uint256 indexSet = bound(_b, 1, (2 ** questionCount) - 1);
         uint256 noPositionsCount;
 
-        // while (indexSet >> noPositionsCount > 0) {
-        //     ++noPositionsCount;
-        // }
-
         // prepare market
         vm.prank(oracle);
         bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
