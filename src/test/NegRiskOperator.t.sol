@@ -8,11 +8,11 @@ import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {DeployLib} from "src/dev/libraries/DeployLib.sol";
 import {USDC} from "src/test/mock/USDC.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
+import {NegRiskOperator} from "src/NegRiskOperator.sol";
 
-import {NegRiksOperator} from "src/NegRiskOperator.sol";
-
-contract NegRiskOperator is TestHelper {
+contract NegRiskOperatorTest is TestHelper {
     NegRiskAdapter nrAdapter;
+    NegRiskOperator nrOperator;
     USDC usdc;
     WrappedCollateral wcol;
     IConditionalTokens ctf;
@@ -27,6 +27,6 @@ contract NegRiskOperator is TestHelper {
         nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), vault);
         wcol = nrAdapter.wcol();
 
-        nrOperator = new NegRiskOperator(address(nrAdapter));
+        nrOperator = new NegRiskOperator(address(nrAdapter), oracle);
     }
 }

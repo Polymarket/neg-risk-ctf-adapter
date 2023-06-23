@@ -10,7 +10,6 @@ import {DeployLib} from "src/dev/libraries/DeployLib.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
 
 contract VaultSnapshots is TestHelper, GasSnapshot {
     USDC usdc;
@@ -54,7 +53,7 @@ contract VaultSnapshots is TestHelper, GasSnapshot {
         vm.startPrank(brian);
         usdc.approve(address(ctf), amount);
         ctf.splitPosition(
-            IERC20(address(usdc)),
+            address(usdc),
             bytes32(0),
             conditionId,
             Helpers._partition(),

@@ -3,12 +3,12 @@ pragma solidity 0.8.20;
 
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
 import {Admin} from "src/modules/Admin.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {MarketData, MarketDataManager} from "src/modules/MarketDataManager.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
 
 interface INegRiskAdapterEE {
     error IndexOutOfBounds();
@@ -129,14 +129,14 @@ contract NegRiskAdapter is
     //////////////////////////////////////////////////////////////*/
 
     function splitPosition(
-        IERC20 _collateralToken,
+        address _collateralToken,
         bytes32,
         bytes32 _conditionId,
         uint256[] calldata,
         uint256 _amount
     ) external {
         require(
-            _collateralToken == IERC20(address(col)),
+            _collateralToken == address(col),
             "CTFWrapper: collateralToken != collateral"
         );
         splitPosition(_conditionId, _amount);
@@ -147,7 +147,7 @@ contract NegRiskAdapter is
         wcol.wrap(address(this), _amount);
 
         ctf.splitPosition(
-            IERC20(address(wcol)),
+            address(wcol),
             bytes32(0),
             _conditionId,
             Helpers._partition(),
@@ -197,7 +197,7 @@ contract NegRiskAdapter is
         );
 
         ctf.mergePositions(
-            IERC20(address(wcol)),
+            address(wcol),
             bytes32(0),
             _conditionId,
             Helpers._partition(),
@@ -230,7 +230,7 @@ contract NegRiskAdapter is
         );
 
         ctf.redeemPositions(
-            IERC20(address(wcol)),
+            address(wcol),
             bytes32(0),
             _conditionId,
             Helpers._partition()
@@ -436,7 +436,7 @@ contract NegRiskAdapter is
 
     function _splitPosition(bytes32 _conditionId, uint256 _amount) internal {
         ctf.splitPosition(
-            IERC20(address(wcol)),
+            address(wcol),
             bytes32(0),
             _conditionId,
             Helpers._partition(),

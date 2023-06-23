@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {IERC20} from "./IERC20.sol";
+/// @notice references to IERC20 are replaced by address
 
 /// @notice Interface for Gnosis Conditional Tokens
 interface IERC1155 {
@@ -82,7 +82,7 @@ interface IConditionalTokensEE {
     /// @dev Emitted when a position is successfully split.
     event PositionSplit(
         address indexed stakeholder,
-        IERC20 collateralToken,
+        address collateralToken,
         bytes32 indexed parentCollectionId,
         bytes32 indexed conditionId,
         uint256[] partition,
@@ -91,7 +91,7 @@ interface IConditionalTokensEE {
     /// @dev Emitted when positions are successfully merged.
     event PositionsMerge(
         address indexed stakeholder,
-        IERC20 collateralToken,
+        address collateralToken,
         bytes32 indexed parentCollectionId,
         bytes32 indexed conditionId,
         uint256[] partition,
@@ -99,7 +99,7 @@ interface IConditionalTokensEE {
     );
     event PayoutRedemption(
         address indexed redeemer,
-        IERC20 indexed collateralToken,
+        address indexed collateralToken,
         bytes32 indexed parentCollectionId,
         bytes32 conditionId,
         uint256[] indexSets,
@@ -142,7 +142,7 @@ interface IConditionalTokens is IConditionalTokensEE, IERC1155 {
     /// @param partition An array of disjoint index sets representing a nontrivial partition of the outcome slots of the given condition. E.g. A|B and C but not A|B and B|C (is not disjoint). Each element's a number which, together with the condition, represents the outcome collection. E.g. 0b110 is A|B, 0b010 is B, etc.
     /// @param amount The amount of collateral or stake to split.
     function splitPosition(
-        IERC20 collateralToken,
+        address collateralToken,
         bytes32 parentCollectionId,
         bytes32 conditionId,
         uint256[] calldata partition,
@@ -150,7 +150,7 @@ interface IConditionalTokens is IConditionalTokensEE, IERC1155 {
     ) external;
 
     function mergePositions(
-        IERC20 collateralToken,
+        address collateralToken,
         bytes32 parentCollectionId,
         bytes32 conditionId,
         uint256[] calldata partition,
@@ -158,7 +158,7 @@ interface IConditionalTokens is IConditionalTokensEE, IERC1155 {
     ) external;
 
     function redeemPositions(
-        IERC20 collateralToken,
+        address collateralToken,
         bytes32 parentCollectionId,
         bytes32 conditionId,
         uint256[] calldata indexSets
@@ -195,7 +195,7 @@ interface IConditionalTokens is IConditionalTokensEE, IERC1155 {
     /// @param collateralToken Collateral token which backs the position.
     /// @param collectionId ID of the outcome collection associated with this position.
     function getPositionId(
-        IERC20 collateralToken,
+        address collateralToken,
         bytes32 collectionId
     ) external pure returns (uint256);
 }

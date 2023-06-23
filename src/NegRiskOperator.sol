@@ -10,8 +10,12 @@ interface INegRiskOperatorEE {
     error InvalidPayouts(uint256[] payouts);
     error Flagged();
     error NotEligibleForEmergencyResolution();
+    error ResultNotAvailable();
 }
 
+/// @title NegRiskOperator
+/// Q: should we have different delay for emergency vs. regular resolution
+/// kinda think we should have a delay for resolution regardless (?)
 contract NegRiskOperator is INegRiskOperatorEE, Auth {
     NegRiskAdapter immutable nrAdapter;
     address immutable oracle;
@@ -52,10 +56,6 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         questionIds[_requestId] = questionId;
     }
 
-    function resolveQuestion(bytes32 _questionId) external onlyAdmin {
-        nrAdapter.reportOutcome(questionId, payout1 == 0 ? true : false);
-    }
-
     function reportPayouts(
         bytes32 _requestId,
         uint256[] calldata _payouts
@@ -75,7 +75,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     function resolveQuestion(bytes32 _questionId) external onlyAdmin {
         uint256 result = results[_questionId];
 
-        if (result == 0) revert InvalidResult();
+        if (result == 0) revert ResultNotAvailable();
         if (flags[_questionId] != 0) revert Flagged();
 
         nrAdapter.reportOutcome(

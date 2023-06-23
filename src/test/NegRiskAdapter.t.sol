@@ -223,7 +223,7 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
         {
             uint256 feeAmount = (_amount * feeBips) / 1_00_00;
             uint256 amountOut = _amount - feeAmount;
-            uint256 noPositionsCount;
+
             i = 0;
             while (i < questionCount) {
                 if (indexSet & (1 << i) > 0) {
