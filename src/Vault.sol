@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {NegRiskAdapter} from "./NegRiskAdapter.sol";
-import {IUmaCtfAdapter} from "./interfaces/IUmaCtfAdapter.sol";
-import {Auth} from "./modules/Auth.sol";
-import {ERC1155TokenReceiver} from "../lib/solmate/src/tokens/ERC1155.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
-import {IERC1155} from "./interfaces/IConditionalTokens.sol";
+import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
 
+import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
+import {Auth} from "src/modules/Auth.sol";
+import {IERC1155} from "src/interfaces/IConditionalTokens.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
+import {IUmaCtfAdapter} from "src/interfaces/IUmaCtfAdapter.sol";
+
+/// @title Vault
+/// @author Mike Shrieve (mike@polymarket.com)
 contract Vault is Auth, ERC1155TokenReceiver {
+    /*//////////////////////////////////////////////////////////////
+                                 ERC20
+    //////////////////////////////////////////////////////////////*/
+
     function transferERC20(
         address _erc20,
         address _to,
@@ -16,6 +23,10 @@ contract Vault is Auth, ERC1155TokenReceiver {
     ) external onlyAdmin {
         IERC20(_erc20).transfer(_to, _amount);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                ERC1155
+    //////////////////////////////////////////////////////////////*/
 
     function transferERC1155(
         address _erc1155,

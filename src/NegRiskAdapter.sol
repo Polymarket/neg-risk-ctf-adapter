@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
+
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
-import {Helpers} from "src/libraries/Helpers.sol";
 import {Admin} from "src/modules/Admin.sol";
-import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {MarketData, MarketDataManager} from "src/modules/MarketDataManager.sol";
+import {CTHelpers} from "src/libraries/CTHelpers.sol";
+import {Helpers} from "src/libraries/Helpers.sol";
+import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
+/// @title INegRiskAdapterEE
+/// @notice NegRiskAdapter Errors and Events
 interface INegRiskAdapterEE {
     error IndexOutOfBounds();
     error OnlyOracle();
@@ -35,7 +38,7 @@ interface INegRiskAdapterEE {
     );
 }
 
-/// @title CTFWrapper
+/// @title NegRiskAdapter
 /// @author Mike Shrieve (mike@polymarket.com)
 contract NegRiskAdapter is
     INegRiskAdapterEE,
@@ -53,9 +56,7 @@ contract NegRiskAdapter is
 
     address public constant noTokenBurnAddress =
         address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
-
     uint256 public constant feeDenominator = 1_00_00;
-
     bytes32 private constant MASK = bytes32(type(uint256).max) << 8;
 
     /*//////////////////////////////////////////////////////////////
@@ -444,6 +445,7 @@ contract NegRiskAdapter is
         );
     }
 
+    // to-do: this is not internal!
     function getConditionId(bytes32 _questionId) public view returns (bytes32) {
         return
             CTHelpers.getConditionId(

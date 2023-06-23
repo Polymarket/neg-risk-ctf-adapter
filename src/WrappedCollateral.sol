@@ -1,20 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {ERC20} from "../lib/solmate/src/tokens/ERC20.sol";
+import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 
+/// @title IWrappedCollateralEE
+/// @notice WrappedCollateral Errors and Events
 interface IWrappedCollateralEE {
     error OnlyOwner();
 }
 
+/// @title WrappedCollateral
+/// @author Mike Shrieve (mike@polymarket.com)
 contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
+    /*//////////////////////////////////////////////////////////////
+                                 STATE
+    //////////////////////////////////////////////////////////////*/
+
     address public immutable owner;
     address public immutable underlying;
+
+    /*//////////////////////////////////////////////////////////////
+                               MODIFIERS
+    //////////////////////////////////////////////////////////////*/
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert OnlyOwner();
         _;
     }
+
+    /*//////////////////////////////////////////////////////////////
+                              CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
 
     constructor(
         address _underlying,
@@ -25,13 +41,17 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
     }
 
     /*//////////////////////////////////////////////////////////////
-                             WRAP / UNWRAP
+                                  WRAP
     //////////////////////////////////////////////////////////////*/
 
     function wrap(address _to, uint256 _amount) external {
         ERC20(underlying).transferFrom(msg.sender, address(this), _amount);
         _mint(_to, _amount);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                 UNWRAP
+    //////////////////////////////////////////////////////////////*/
 
     function unwrap(address _to, uint256 _amount) external {
         _burn(msg.sender, _amount);
