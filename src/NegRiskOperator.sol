@@ -31,7 +31,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
     mapping(bytes32 _questionId => bool) public results;
-    mapping(bytes32 _questionId => bool) public flagged;
+    mapping(bytes32 _questionId => uint256) public flaggedAt;
     mapping(bytes32 _questionId => uint256) public reportedAt;
 
     /*//////////////////////////////////////////////////////////////
@@ -50,8 +50,6 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     modifier onlyNotFlagged(bytes32 _questionId) {
         if (flagged[_questionId]) revert OnlyNotFlagged();
     }
-
-    // to-do: add onlyResultReceivedAndDelayOver
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -94,10 +92,14 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         bytes32 _requestId,
         uint256[] calldata _payouts
     ) external onlyOracle {
+        if (_payouts.length != 2) {
+            revert InvalidPayouts(_payouts);
+        }
+
         uint256 payout0 = _payouts[0];
         uint256 payout1 = _payouts[1];
 
-        if ((_payouts.length != 2) || (payout0 * payout1 != 0)) {
+        if (payout0 * payout1 != 0) {
             revert InvalidPayouts(_payouts);
         }
 
@@ -124,37 +126,28 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     }
 
     /*//////////////////////////////////////////////////////////////
-                             FLAG QUESTION
+                                 ADMIN
     //////////////////////////////////////////////////////////////*/
 
     function flagQuestion(
         bytes32 _questionId
     ) external onlyAdmin onlyNotFlagged(_questionId) {
-        flagged[_questionId] = true;
+        flaggedAt[_questionId] = block.timestamp;
     }
-
-    /*//////////////////////////////////////////////////////////////
-                            UNFLAG QUESTION
-    //////////////////////////////////////////////////////////////*/
 
     function unflagQuestion(
         bytes32 _questionId
     ) external onlyAdmin onlyFlagged(_questionId) {
-        flags[_questionId] = 0;
+        flaggedAt[_questionId] = 0;
     }
 
-    /*//////////////////////////////////////////////////////////////
-                           EMERGENCY RESOLVE
-    //////////////////////////////////////////////////////////////*/
-
-    // to-do: handle the case where reportPayouts reverts bc payouts is [1,1]
     function emergencyResolve(
         bytes32 _questionId,
         bool _result
-    ) external onlyAdmin onlyFlagged(_questionId) {
-        uint256 reportedAt = reportedAt[_questionId];
+    ) external onlyAdmin {
+        uint256 flaggedAt = flaggedAt[_questionId];
 
-        if (block.timestamp < reportedAt + delayPeriod)
+        if (block.timestamp < flaggedAt + delayPeriod)
             revert DelayPeriodNotOver();
 
         nrAdapter.reportOutcome(_questionId, _result);
