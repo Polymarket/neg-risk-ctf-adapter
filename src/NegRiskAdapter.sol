@@ -364,6 +364,7 @@ contract NegRiskAdapter is
         bytes32 marketId = computeMarketId(oracle, _data);
 
         MarketData md = getMarketData(marketId);
+
         if (md.oracle() != address(0)) {
             revert MarketAlreadyPrepared();
         }
@@ -413,6 +414,10 @@ contract NegRiskAdapter is
         uint256 questionIndex = getQuestionIndex(_questionId);
 
         MarketData md = getMarketData(marketId);
+
+        if (md.oracle() == address(0)) {
+            revert MarketNotPrepared();
+        }
 
         if (md.oracle() != msg.sender) {
             revert OnlyOracle();
