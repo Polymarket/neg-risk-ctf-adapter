@@ -23,11 +23,7 @@ interface INegRiskAdapterEE {
     error MarketAlreadyDetermined();
     error FeeBipsOutOfBounds();
 
-    event MarketPrepared(
-        bytes32 indexed marketId,
-        address indexed oracle,
-        bytes data
-    );
+    event MarketPrepared(bytes32 indexed marketId, address indexed oracle, bytes data);
 
     event QuestionPrepared(
         bytes32 indexed questionId,
@@ -40,11 +36,7 @@ interface INegRiskAdapterEE {
 
 /// @title NegRiskAdapter
 /// @author Mike Shrieve (mike@polymarket.com)
-contract NegRiskAdapter is
-    INegRiskAdapterEE,
-    ERC1155TokenReceiver,
-    MarketDataManager
-{
+contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataManager {
     /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
@@ -81,17 +73,15 @@ contract NegRiskAdapter is
                                   IDS
     //////////////////////////////////////////////////////////////*/
 
-    function computeMarketId(
-        address _oracle,
-        bytes memory _data
-    ) public pure returns (bytes32) {
+    function computeMarketId(address _oracle, bytes memory _data) public pure returns (bytes32) {
         return keccak256(abi.encode(_oracle, _data)) & MASK;
     }
 
-    function computeQuestionId(
-        bytes32 _marketId,
-        uint256 _outcomeIndex
-    ) public pure returns (bytes32) {
+    function computeQuestionId(bytes32 _marketId, uint256 _outcomeIndex)
+        public
+        pure
+        returns (bytes32)
+    {
         unchecked {
             return bytes32(uint256(_marketId) + _outcomeIndex);
         }
@@ -101,26 +91,18 @@ contract NegRiskAdapter is
         return _questionId & MASK;
     }
 
-    function getQuestionIndex(
-        bytes32 _questionId
-    ) public pure returns (uint256) {
+    function getQuestionIndex(bytes32 _questionId) public pure returns (uint256) {
         return uint256(_questionId & ~MASK);
     }
 
-    function computePositionId(
-        bytes32 _questionId,
-        bool _outcome
-    ) public view returns (uint256) {
+    function computePositionId(bytes32 _questionId, bool _outcome) public view returns (uint256) {
         bytes32 collectionId = CTHelpers.getCollectionId(
             bytes32(0),
             getConditionId(_questionId),
             _outcome ? 1 : 2 // 1 is yes, 2 is no
         );
 
-        uint256 positionId = CTHelpers.getPositionId(
-            address(wcol),
-            collectionId
-        );
+        uint256 positionId = CTHelpers.getPositionId(address(wcol), collectionId);
 
         return positionId;
     }
@@ -136,10 +118,7 @@ contract NegRiskAdapter is
         uint256[] calldata,
         uint256 _amount
     ) external {
-        require(
-            _collateralToken == address(col),
-            "CTFWrapper: collateralToken != collateral"
-        );
+        require(_collateralToken == address(col), "CTFWrapper: collateralToken != collateral");
         splitPosition(_conditionId, _amount);
     }
 
@@ -147,13 +126,7 @@ contract NegRiskAdapter is
         col.transferFrom(msg.sender, address(this), _amount);
         wcol.wrap(address(this), _amount);
 
-        ctf.splitPosition(
-            address(wcol),
-            bytes32(0),
-            _conditionId,
-            Helpers._partition(),
-            _amount
-        );
+        ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers._partition(), _amount);
 
         ctf.safeBatchTransferFrom(
             address(this),
@@ -176,34 +149,20 @@ contract NegRiskAdapter is
         uint256 _amount
     ) external {
         require(
-            collateralToken == IERC20(address(col)),
-            "CTFWrapper: collateralToken != collateral"
+            collateralToken == IERC20(address(col)), "CTFWrapper: collateralToken != collateral"
         );
         mergePositions(_conditionId, _amount);
     }
 
     function mergePositions(bytes32 _conditionId, uint256 _amount) public {
-        uint256[] memory positionIds = Helpers._positionIds(
-            address(wcol),
-            _conditionId
-        );
+        uint256[] memory positionIds = Helpers._positionIds(address(wcol), _conditionId);
 
         // get conditional tokens from sender
         ctf.safeBatchTransferFrom(
-            msg.sender,
-            address(this),
-            positionIds,
-            Helpers._values(2, _amount),
-            ""
+            msg.sender, address(this), positionIds, Helpers._values(2, _amount), ""
         );
 
-        ctf.mergePositions(
-            address(wcol),
-            bytes32(0),
-            _conditionId,
-            Helpers._partition(),
-            _amount
-        );
+        ctf.mergePositions(address(wcol), bytes32(0), _conditionId, Helpers._partition(), _amount);
 
         wcol.unwrap(msg.sender, _amount);
     }
@@ -212,30 +171,13 @@ contract NegRiskAdapter is
                             REDEEM POSITION
     //////////////////////////////////////////////////////////////*/
 
-    function redeemPositions(
-        bytes32 _conditionId,
-        uint256[] calldata _amounts
-    ) public {
-        uint256[] memory positionIds = Helpers._positionIds(
-            address(wcol),
-            _conditionId
-        );
+    function redeemPositions(bytes32 _conditionId, uint256[] calldata _amounts) public {
+        uint256[] memory positionIds = Helpers._positionIds(address(wcol), _conditionId);
 
         // get conditional tokens from sender
-        ctf.safeBatchTransferFrom(
-            msg.sender,
-            address(this),
-            positionIds,
-            _amounts,
-            ""
-        );
+        ctf.safeBatchTransferFrom(msg.sender, address(this), positionIds, _amounts, "");
 
-        ctf.redeemPositions(
-            address(wcol),
-            bytes32(0),
-            _conditionId,
-            Helpers._partition()
-        );
+        ctf.redeemPositions(address(wcol), bytes32(0), _conditionId, Helpers._partition());
 
         wcol.unwrap(msg.sender, wcol.balanceOf(address(this)));
     }
@@ -246,11 +188,7 @@ contract NegRiskAdapter is
 
     /// @notice _indexSet looks like 0x0000....01101
     /// @notice the lsb is the _first_ question
-    function convertPositions(
-        bytes32 _marketId,
-        uint256 _amount,
-        uint256 _indexSet
-    ) external {
+    function convertPositions(bytes32 _marketId, uint256 _amount, uint256 _indexSet) external {
         MarketData md = getMarketData(_marketId);
         uint256 questionCount = md.questionCount();
 
@@ -294,7 +232,9 @@ contract NegRiskAdapter is
                         --yesIndex;
                     }
                 }
-                ++index;
+                unchecked {
+                    ++index;
+                }
             }
 
             uint256 yesPositionsLength = questionCount - noIndex;
@@ -352,10 +292,7 @@ contract NegRiskAdapter is
                              PREPARE MARKET
     //////////////////////////////////////////////////////////////*/
 
-    function prepareMarket(
-        bytes memory _data,
-        uint256 _feeBips
-    ) external returns (bytes32) {
+    function prepareMarket(bytes memory _data, uint256 _feeBips) external returns (bytes32) {
         if (_feeBips > 1_00_00) {
             revert FeeBipsOutOfBounds();
         }
@@ -379,10 +316,7 @@ contract NegRiskAdapter is
                             PREPARE QUESTION
     //////////////////////////////////////////////////////////////*/
 
-    function prepareQuestion(
-        bytes32 _marketId,
-        bytes memory _data
-    ) external returns (bytes32) {
+    function prepareQuestion(bytes32 _marketId, bytes memory _data) external returns (bytes32) {
         MarketData md = getMarketData(_marketId);
         address oracle = md.oracle();
 
@@ -441,22 +375,15 @@ contract NegRiskAdapter is
     //////////////////////////////////////////////////////////////*/
 
     function _splitPosition(bytes32 _conditionId, uint256 _amount) internal {
-        ctf.splitPosition(
-            address(wcol),
-            bytes32(0),
-            _conditionId,
-            Helpers._partition(),
-            _amount
-        );
+        ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers._partition(), _amount);
     }
 
     // to-do: this is not internal!
     function getConditionId(bytes32 _questionId) public view returns (bytes32) {
-        return
-            CTHelpers.getConditionId(
-                address(this), // oracle
-                _questionId,
-                2 // outcomeCount
-            );
+        return CTHelpers.getConditionId(
+            address(this), // oracle
+            _questionId,
+            2 // outcomeCount
+        );
     }
 }

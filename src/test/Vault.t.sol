@@ -48,56 +48,29 @@ contract VaultTest is TestHelper {
         assertEq(usdc.balanceOf(brian), l - m);
     }
 
-    function test_transferConditionalTokens(
-        uint64 _a,
-        uint64 _b,
-        uint64 _c,
-        bytes32 _questionId
-    ) public {
+    function test_transferConditionalTokens(uint64 _a, uint64 _b, uint64 _c, bytes32 _questionId)
+        public
+    {
         uint256 s = uint256(_a);
         uint256 m = s + uint256(_b);
         uint256 l = m + uint256(_c);
 
         ctf.prepareCondition(address(0), _questionId, 2);
-        bytes32 conditionId = CTHelpers.getConditionId(
-            address(0),
-            _questionId,
-            2
-        );
+        bytes32 conditionId = CTHelpers.getConditionId(address(0), _questionId, 2);
         usdc.mint(brian, l);
 
         vm.startPrank(brian);
         usdc.approve(address(ctf), m);
-        ctf.splitPosition(
-            address(usdc),
-            bytes32(0),
-            conditionId,
-            Helpers._partition(),
-            m
-        );
+        ctf.splitPosition(address(usdc), bytes32(0), conditionId, Helpers._partition(), m);
 
         vm.stopPrank();
 
-        bytes32 collectionId0 = CTHelpers.getCollectionId(
-            bytes32(0),
-            conditionId,
-            1
-        );
-        bytes32 collectionId1 = CTHelpers.getCollectionId(
-            bytes32(0),
-            conditionId,
-            2
-        );
+        bytes32 collectionId0 = CTHelpers.getCollectionId(bytes32(0), conditionId, 1);
+        bytes32 collectionId1 = CTHelpers.getCollectionId(bytes32(0), conditionId, 2);
 
-        uint256 positionId0 = CTHelpers.getPositionId(
-            address(usdc),
-            collectionId0
-        );
+        uint256 positionId0 = CTHelpers.getPositionId(address(usdc), collectionId0);
 
-        uint256 positionId1 = CTHelpers.getPositionId(
-            address(usdc),
-            collectionId1
-        );
+        uint256 positionId1 = CTHelpers.getPositionId(address(usdc), collectionId1);
 
         vm.prank(brian);
         ctf.safeTransferFrom(brian, address(vault), positionId0, m, "");

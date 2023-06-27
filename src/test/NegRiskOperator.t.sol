@@ -46,10 +46,7 @@ contract NegRiskOperatorTest is TestHelper {
         vm.prank(alice);
         bytes32 marketId = nrOperator.prepareMarket(_data, _feeBips);
 
-        assertEq(
-            marketId,
-            nrAdapter.computeMarketId(address(nrOperator), _data)
-        );
+        assertEq(marketId, nrAdapter.computeMarketId(address(nrOperator), _data));
         assertEq(nrAdapter.getFeeBips(marketId), _feeBips);
         assertEq(nrAdapter.getOracle(marketId), address(nrOperator));
         assertEq(nrAdapter.getQuestionCount(marketId), 0);
@@ -63,11 +60,7 @@ contract NegRiskOperatorTest is TestHelper {
         bytes32 marketId = nrOperator.prepareMarket(data, feeBips);
 
         vm.prank(alice);
-        bytes32 questionId = nrOperator.prepareQuestion(
-            marketId,
-            data,
-            _requestId
-        );
+        bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);
 
         assertEq(nrAdapter.getQuestionCount(marketId), 1);
         assertEq(nrAdapter.getMarketId(questionId), marketId);
@@ -81,17 +74,10 @@ contract NegRiskOperatorTest is TestHelper {
         bytes32 marketId = nrOperator.prepareMarket(data, feeBips);
 
         vm.prank(alice);
-        bytes32 questionId = nrOperator.prepareQuestion(
-            marketId,
-            data,
-            _requestId
-        );
+        bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);
 
         vm.prank(oracle);
-        nrOperator.reportPayouts(
-            _requestId,
-            _result ? payoutsTrue : payoutsFalse
-        );
+        nrOperator.reportPayouts(_requestId, _result ? payoutsTrue : payoutsFalse);
 
         assertEq(nrOperator.results(questionId), _result);
         assertEq(nrOperator.reportedAt(questionId), block.timestamp);
@@ -105,17 +91,10 @@ contract NegRiskOperatorTest is TestHelper {
         bytes32 marketId = nrOperator.prepareMarket(data, feeBips);
 
         vm.prank(alice);
-        bytes32 questionId = nrOperator.prepareQuestion(
-            marketId,
-            data,
-            _requestId
-        );
+        bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);
 
         vm.prank(oracle);
-        nrOperator.reportPayouts(
-            _requestId,
-            _result ? payoutsTrue : payoutsFalse
-        );
+        nrOperator.reportPayouts(_requestId, _result ? payoutsTrue : payoutsFalse);
 
         skip(nrOperator.delayPeriod());
         nrOperator.resolveQuestion(questionId);
@@ -143,10 +122,7 @@ contract NegRiskOperatorTest is TestHelper {
         assertEq(nrOperator.flaggedAt(_questionId), 0);
     }
 
-    function test_emergencyResolveQuestion(
-        bytes32 _requestId,
-        bool _result
-    ) public {
+    function test_emergencyResolveQuestion(bytes32 _requestId, bool _result) public {
         bytes memory data = new bytes(0);
         uint256 feeBips = 0;
 
@@ -154,11 +130,7 @@ contract NegRiskOperatorTest is TestHelper {
         bytes32 marketId = nrOperator.prepareMarket(data, feeBips);
 
         vm.prank(alice);
-        bytes32 questionId = nrOperator.prepareQuestion(
-            marketId,
-            data,
-            _requestId
-        );
+        bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);
 
         vm.prank(alice);
         nrOperator.flagQuestion(questionId);

@@ -24,11 +24,7 @@ contract MarketDataTest is TestHelper {
         assertEq(md.determined(), true);
     }
 
-    function test_initializeAndDetermine(
-        address _oracle,
-        uint256 _feeBips,
-        uint8 _result
-    ) public {
+    function test_initializeAndDetermine(address _oracle, uint256 _feeBips, uint8 _result) public {
         uint256 feeBips = bound(_feeBips, 0, 10_000);
 
         MarketData md = MarketDataLib.initialize(_oracle, feeBips);

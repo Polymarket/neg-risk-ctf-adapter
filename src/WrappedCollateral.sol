@@ -32,10 +32,9 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(
-        address _underlying,
-        uint8 _decimals
-    ) ERC20("Wrapped Collateral", "WC", _decimals) {
+    constructor(address _underlying, uint8 _decimals)
+        ERC20("Wrapped Collateral", "WC", _decimals)
+    {
         owner = msg.sender;
         underlying = _underlying;
     }

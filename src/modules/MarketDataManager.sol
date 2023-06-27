@@ -19,9 +19,7 @@ abstract contract MarketDataManager {
         return marketData[_marketId].oracle();
     }
 
-    function getQuestionCount(
-        bytes32 _marketId
-    ) external view returns (uint256) {
+    function getQuestionCount(bytes32 _marketId) external view returns (uint256) {
         return marketData[_marketId].questionCount();
     }
 
@@ -41,11 +39,7 @@ abstract contract MarketDataManager {
                                INITIALIZE
     //////////////////////////////////////////////////////////////*/
 
-    function initializeMarket(
-        bytes32 _marketId,
-        address _oracle,
-        uint256 _feeBips
-    ) internal {
+    function initializeMarket(bytes32 _marketId, address _oracle, uint256 _feeBips) internal {
         marketData[_marketId] = MarketDataLib.initialize(_oracle, _feeBips);
     }
 

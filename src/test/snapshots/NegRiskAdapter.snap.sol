@@ -133,10 +133,8 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
             ++i;
         }
 
-        uint256 positionId0False = nrAdapter.computePositionId(
-            nrAdapter.computeQuestionId(marketId, 0),
-            false
-        );
+        uint256 positionId0False =
+            nrAdapter.computePositionId(nrAdapter.computeQuestionId(marketId, 0), false);
         vm.startPrank(alice);
         ctf.setApprovalForAll(address(nrAdapter), true);
 

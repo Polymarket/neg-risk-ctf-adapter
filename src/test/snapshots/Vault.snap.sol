@@ -43,45 +43,21 @@ contract VaultSnapshots is TestHelper, GasSnapshot {
         bytes32 questionId = keccak256("questionId");
 
         ctf.prepareCondition(address(0), questionId, 2);
-        bytes32 conditionId = CTHelpers.getConditionId(
-            address(0),
-            questionId,
-            2
-        );
+        bytes32 conditionId = CTHelpers.getConditionId(address(0), questionId, 2);
         usdc.mint(brian, amount);
 
         vm.startPrank(brian);
         usdc.approve(address(ctf), amount);
-        ctf.splitPosition(
-            address(usdc),
-            bytes32(0),
-            conditionId,
-            Helpers._partition(),
-            amount
-        );
+        ctf.splitPosition(address(usdc), bytes32(0), conditionId, Helpers._partition(), amount);
 
         vm.stopPrank();
 
-        bytes32 collectionId0 = CTHelpers.getCollectionId(
-            bytes32(0),
-            conditionId,
-            1
-        );
-        bytes32 collectionId1 = CTHelpers.getCollectionId(
-            bytes32(0),
-            conditionId,
-            2
-        );
+        bytes32 collectionId0 = CTHelpers.getCollectionId(bytes32(0), conditionId, 1);
+        bytes32 collectionId1 = CTHelpers.getCollectionId(bytes32(0), conditionId, 2);
 
-        uint256 positionId0 = CTHelpers.getPositionId(
-            address(usdc),
-            collectionId0
-        );
+        uint256 positionId0 = CTHelpers.getPositionId(address(usdc), collectionId0);
 
-        uint256 positionId1 = CTHelpers.getPositionId(
-            address(usdc),
-            collectionId1
-        );
+        uint256 positionId1 = CTHelpers.getPositionId(address(usdc), collectionId1);
 
         vm.prank(brian);
         ctf.safeTransferFrom(brian, address(vault), positionId0, amount, "");

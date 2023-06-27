@@ -57,9 +57,7 @@ abstract contract Admin is Auth, IAdmin {
     /// @notice or if the safety period has not passed.
     /// @param _questionId - Question ID
     modifier onlyIfEmergencyResolutionIsAllowed(bytes32 _questionId) {
-        uint256 resolutionTimestamp = emergencyResolutionTimestamps[
-            _questionId
-        ];
+        uint256 resolutionTimestamp = emergencyResolutionTimestamps[_questionId];
         if (!_isPaused(_questionId)) revert QuestionIsNotPaused();
         if (block.timestamp < resolutionTimestamp) {
             revert SafetyPeriodNotPassed();
@@ -76,9 +74,7 @@ abstract contract Admin is Auth, IAdmin {
     function pause(bytes32 _questionId) external onlyAdmin {
         if (_isPaused(_questionId)) revert QuestionIsPaused();
 
-        emergencyResolutionTimestamps[_questionId] =
-            block.timestamp +
-            safetyPeriod;
+        emergencyResolutionTimestamps[_questionId] = block.timestamp + safetyPeriod;
 
         emit QuestionPaused(_questionId);
     }

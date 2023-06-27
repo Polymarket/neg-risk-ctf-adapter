@@ -16,11 +16,7 @@ contract Vault is Auth, ERC1155TokenReceiver {
                                  ERC20
     //////////////////////////////////////////////////////////////*/
 
-    function transferERC20(
-        address _erc20,
-        address _to,
-        uint256 _amount
-    ) external onlyAdmin {
+    function transferERC20(address _erc20, address _to, uint256 _amount) external onlyAdmin {
         IERC20(_erc20).transfer(_to, _amount);
     }
 
@@ -28,19 +24,11 @@ contract Vault is Auth, ERC1155TokenReceiver {
                                 ERC1155
     //////////////////////////////////////////////////////////////*/
 
-    function transferERC1155(
-        address _erc1155,
-        address _to,
-        uint256 _id,
-        uint256 _value
-    ) external onlyAdmin {
-        IERC1155(_erc1155).safeTransferFrom(
-            address(this),
-            _to,
-            _id,
-            _value,
-            ""
-        );
+    function transferERC1155(address _erc1155, address _to, uint256 _id, uint256 _value)
+        external
+        onlyAdmin
+    {
+        IERC1155(_erc1155).safeTransferFrom(address(this), _to, _id, _value, "");
     }
 
     function batchTransferERC1155(
@@ -49,12 +37,6 @@ contract Vault is Auth, ERC1155TokenReceiver {
         uint256[] calldata _ids,
         uint256[] calldata _values
     ) external onlyAdmin {
-        IERC1155(_erc1155).safeBatchTransferFrom(
-            address(this),
-            _to,
-            _ids,
-            _values,
-            ""
-        );
+        IERC1155(_erc1155).safeBatchTransferFrom(address(this), _to, _ids, _values, "");
     }
 }

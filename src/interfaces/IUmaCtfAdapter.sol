@@ -11,7 +11,8 @@ struct QuestionData {
     uint256 proposalBond;
     /// @notice Custom liveness period
     uint256 liveness;
-    /// @notice Emergency resolution timestamp, set when a market is flagged for emergency resolution
+    /// @notice Emergency resolution timestamp, set when a market is flagged for emergency
+    /// resolution
     uint256 emergencyResolutionTimestamp;
     /// @notice Flag marking whether a question is resolved
     bool resolved;
@@ -68,16 +69,11 @@ interface IUmaCtfAdapterEE {
 
     /// @notice Emitted when a question is resolved
     event QuestionResolved(
-        bytes32 indexed questionID,
-        int256 indexed settledPrice,
-        uint256[] payouts
+        bytes32 indexed questionID, int256 indexed settledPrice, uint256[] payouts
     );
 
     /// @notice Emitted when a question is emergency resolved
-    event QuestionEmergencyResolved(
-        bytes32 indexed questionID,
-        uint256[] payouts
-    );
+    event QuestionEmergencyResolved(bytes32 indexed questionID, uint256[] payouts);
 }
 
 interface IUmaCtfAdapter is IUmaCtfAdapterEE {
@@ -101,7 +97,5 @@ interface IUmaCtfAdapter is IUmaCtfAdapterEE {
 
     function unpause(bytes32 questionID) external;
 
-    function getQuestion(
-        bytes32 questionID
-    ) external returns (QuestionData memory);
+    function getQuestion(bytes32 questionID) external returns (QuestionData memory);
 }

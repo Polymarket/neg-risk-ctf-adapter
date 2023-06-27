@@ -25,9 +25,7 @@ library MarketDataLib {
         return uint256(uint8(MarketData.unwrap(_d)[0]));
     }
 
-    function incrementQuestionCount(
-        MarketData _d
-    ) internal pure returns (MarketData) {
+    function incrementQuestionCount(MarketData _d) internal pure returns (MarketData) {
         bytes32 d = MarketData.unwrap(_d);
         d = bytes32(uint256(d) + INCREMENT);
         return MarketData.wrap(d);
@@ -37,10 +35,7 @@ library MarketDataLib {
         return MarketData.unwrap(_d)[1] == 0x00 ? false : true;
     }
 
-    function determine(
-        MarketData _d,
-        uint256 _result
-    ) internal pure returns (MarketData) {
+    function determine(MarketData _d, uint256 _result) internal pure returns (MarketData) {
         bytes32 d = MarketData.unwrap(_d);
 
         if (d[1] != 0x00) revert();
@@ -50,10 +45,7 @@ library MarketDataLib {
         return MarketData.wrap(d);
     }
 
-    function initialize(
-        address _oracle,
-        uint256 _feeBips
-    ) internal pure returns (MarketData) {
+    function initialize(address _oracle, uint256 _feeBips) internal pure returns (MarketData) {
         bytes32 d;
         d |= bytes32(bytes2(uint16(_feeBips))) >> 24;
         d |= bytes32(uint256(uint160(_oracle)));

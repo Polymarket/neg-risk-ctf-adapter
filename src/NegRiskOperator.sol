@@ -61,10 +61,11 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                              PREPARE MARKET
     //////////////////////////////////////////////////////////////*/
 
-    function prepareMarket(
-        bytes calldata _data,
-        uint256 _feeBips
-    ) external onlyAdmin returns (bytes32) {
+    function prepareMarket(bytes calldata _data, uint256 _feeBips)
+        external
+        onlyAdmin
+        returns (bytes32)
+    {
         return nrAdapter.prepareMarket(_data, _feeBips);
     }
 
@@ -72,11 +73,11 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                             PREPARE QUESTION
     //////////////////////////////////////////////////////////////*/
 
-    function prepareQuestion(
-        bytes32 _marketId,
-        bytes calldata _data,
-        bytes32 _requestId
-    ) external onlyAdmin returns (bytes32) {
+    function prepareQuestion(bytes32 _marketId, bytes calldata _data, bytes32 _requestId)
+        external
+        onlyAdmin
+        returns (bytes32)
+    {
         bytes32 questionId = nrAdapter.prepareQuestion(_marketId, _data);
         questionIds[_requestId] = questionId;
         return questionId;
@@ -88,10 +89,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
     // to-do: consider enforcing valid questionId
     // and that it hasnt already been reported
-    function reportPayouts(
-        bytes32 _requestId,
-        uint256[] calldata _payouts
-    ) external onlyOracle {
+    function reportPayouts(bytes32 _requestId, uint256[] calldata _payouts) external onlyOracle {
         if (_payouts.length != 2) {
             revert InvalidPayouts(_payouts);
         }
@@ -113,14 +111,13 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                             RESOLVE QUESTION
     //////////////////////////////////////////////////////////////*/
 
-    function resolveQuestion(
-        bytes32 _questionId
-    ) external onlyNotFlagged(_questionId) {
+    function resolveQuestion(bytes32 _questionId) external onlyNotFlagged(_questionId) {
         uint256 reportedAt_ = reportedAt[_questionId];
 
         if (reportedAt_ == 0) revert ResultNotAvailable();
-        if (block.timestamp < reportedAt_ + delayPeriod)
+        if (block.timestamp < reportedAt_ + delayPeriod) {
             revert DelayPeriodNotOver();
+        }
 
         bool result = results[_questionId];
         nrAdapter.reportOutcome(_questionId, result);
@@ -130,9 +127,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                                  ADMIN
     //////////////////////////////////////////////////////////////*/
 
-    function flagQuestion(
-        bytes32 _questionId
-    ) external onlyAdmin onlyNotFlagged(_questionId) {
+    function flagQuestion(bytes32 _questionId) external onlyAdmin onlyNotFlagged(_questionId) {
         flaggedAt[_questionId] = block.timestamp;
     }
 
@@ -141,15 +136,13 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         flaggedAt[_questionId] = 0;
     }
 
-    function emergencyResolveQuestion(
-        bytes32 _questionId,
-        bool _result
-    ) external onlyAdmin {
+    function emergencyResolveQuestion(bytes32 _questionId, bool _result) external onlyAdmin {
         uint256 flaggedAt_ = flaggedAt[_questionId];
 
         if (flaggedAt_ == 0) revert OnlyFlagged();
-        if (block.timestamp < flaggedAt_ + delayPeriod)
+        if (block.timestamp < flaggedAt_ + delayPeriod) {
             revert DelayPeriodNotOver();
+        }
 
         nrAdapter.reportOutcome(_questionId, _result);
     }

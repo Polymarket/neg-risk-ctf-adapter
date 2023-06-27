@@ -56,13 +56,7 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         partition[1] = 2;
 
         snapStart("ConditionalTokens_splitPosition");
-        ctf.splitPosition(
-            address(usdc),
-            bytes32(0),
-            conditionId,
-            partition,
-            amount
-        );
+        ctf.splitPosition(address(usdc), bytes32(0), conditionId, partition, amount);
         snapEnd();
     }
 
@@ -82,22 +76,10 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         vm.startPrank(alice);
         usdc.mint(alice, 2 * amount);
         usdc.approve(address(ctf), 3 * amount);
-        ctf.splitPosition(
-            address(usdc),
-            bytes32(0),
-            conditionId,
-            partition,
-            2 * amount
-        );
+        ctf.splitPosition(address(usdc), bytes32(0), conditionId, partition, 2 * amount);
 
         snapStart("ConditionalTokens_mergePositions");
-        ctf.mergePositions(
-            address(usdc),
-            bytes32(0),
-            conditionId,
-            partition,
-            amount
-        );
+        ctf.mergePositions(address(usdc), bytes32(0), conditionId, partition, amount);
         snapEnd();
     }
 }
