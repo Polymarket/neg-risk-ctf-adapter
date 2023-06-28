@@ -20,4 +20,10 @@ library DeployLib {
         vm.label(deployment, "ConditionalTokens");
         return deployment;
     }
+
+    function deployUmaCtfAdapter(address _ctf, address _finder) public returns (address) {
+        address deployment = _deployCode("artifacts/UmaCtfAdapter.json", abi.encode(_ctf, _finder));
+        vm.label(deployment, "UmaCtfAdapter");
+        return deployment;
+    }
 }

@@ -26,7 +26,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     //////////////////////////////////////////////////////////////*/
 
     NegRiskAdapter public immutable nrAdapter;
-    address public immutable oracle;
+    address public oracle;
     uint256 public constant delayPeriod = 2 hours;
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
@@ -52,8 +52,12 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _nrAdapter, address _oracle) {
+    constructor(address _nrAdapter) {
         nrAdapter = NegRiskAdapter(_nrAdapter);
+    }
+
+    function setOracle(address _oracle) external onlyAdmin {
+        require(oracle == address(0), "oracle already set");
         oracle = _oracle;
     }
 

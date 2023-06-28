@@ -31,7 +31,10 @@ contract NegRiskOperatorTest is TestHelper {
         wcol = nrAdapter.wcol();
 
         vm.prank(alice);
-        nrOperator = new NegRiskOperator(address(nrAdapter), oracle);
+        nrOperator = new NegRiskOperator(address(nrAdapter));
+
+        vm.prank(alice);
+        nrOperator.setOracle(oracle);
     }
 
     function test_initialState() public {
