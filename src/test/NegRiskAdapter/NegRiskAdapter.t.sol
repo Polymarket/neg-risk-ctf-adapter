@@ -236,4 +236,46 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
             assertEq(usdc.balanceOf(brian), (noPositionsCount - 1) * amountOut);
         }
     }
+
+    function test_reportOutcomeFalse(uint256 _index, bool _result) public {
+        bytes memory data = new bytes(0);
+        uint256 feeBips = 0;
+
+        uint256 questionCount = 128;
+        _index = bound(_index, 0, questionCount - 1);
+
+        vm.startPrank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+
+        uint256 i = 0;
+
+        while (i < 128) {
+            nrAdapter.prepareQuestion(marketId, data);
+            ++i;
+        }
+
+        bytes32 questionId = nrAdapter.getQuestionId(marketId, _index);
+        nrAdapter.reportOutcome(questionId, _result);
+    }
+
+    function test_reportOutcomeTrue(uint256 _index, bool _result) public {
+        bytes memory data = new bytes(0);
+        uint256 feeBips = 0;
+
+        uint256 questionCount = 128;
+        _index = bound(_index, 0, questionCount - 1);
+
+        vm.startPrank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+
+        uint256 i = 0;
+
+        while (i < 128) {
+            nrAdapter.prepareQuestion(marketId, data);
+            ++i;
+        }
+
+        bytes32 questionId = nrAdapter.getQuestionId(marketId, _index);
+        nrAdapter.reportOutcome(questionId, _result);
+    }
 }

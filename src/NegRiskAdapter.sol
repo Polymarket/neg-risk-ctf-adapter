@@ -384,7 +384,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
 
         if (_outcome == true) {
             if (md.determined()) revert MarketAlreadyDetermined();
-            md = md.determine(questionIndex);
+            setMarketData(marketId, md.determine(questionIndex));
         }
 
         bytes32 questionId = getQuestionId(marketId, questionIndex);
