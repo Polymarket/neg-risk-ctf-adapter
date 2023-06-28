@@ -61,7 +61,7 @@ contract VaultTest is TestHelper {
 
         vm.startPrank(brian);
         usdc.approve(address(ctf), m);
-        ctf.splitPosition(address(usdc), bytes32(0), conditionId, Helpers._partition(), m);
+        ctf.splitPosition(address(usdc), bytes32(0), conditionId, Helpers.partition(), m);
 
         vm.stopPrank();
 

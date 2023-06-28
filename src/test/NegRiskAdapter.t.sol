@@ -60,7 +60,7 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
 
         while (i < 255) {
             nrAdapter.prepareQuestion(marketId, data);
-            assertEq(nrAdapter.computeQuestionId(marketId, i), bytes32(uint256(marketId) + i));
+            assertEq(nrAdapter.getQuestionId(marketId, i), bytes32(uint256(marketId) + i));
             assertEq(nrAdapter.getQuestionCount(marketId), i + 1);
             ++i;
         }
@@ -100,9 +100,9 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
         assertEq(wcol.balanceOf(address(ctf)), _amount);
 
         // check position token balances
-        uint256 positionIdFalse = nrAdapter.computePositionId(questionId, false);
+        uint256 positionIdFalse = nrAdapter.getPositionId(questionId, false);
         assertEq(ctf.balanceOf(alice, positionIdFalse), _amount);
-        uint256 positionIdTrue = nrAdapter.computePositionId(questionId, true);
+        uint256 positionIdTrue = nrAdapter.getPositionId(questionId, true);
         assertEq(ctf.balanceOf(alice, positionIdTrue), _amount);
     }
 
@@ -123,10 +123,10 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
         usdc.approve(address(nrAdapter), _amount);
         nrAdapter.splitPosition(conditionId, _amount);
 
-        uint256 positionIdFalse = nrAdapter.computePositionId(questionId, false);
+        uint256 positionIdFalse = nrAdapter.getPositionId(questionId, false);
         ctf.safeTransferFrom(alice, brian, positionIdFalse, _amount, "");
 
-        uint256 positionIdTrue = nrAdapter.computePositionId(questionId, true);
+        uint256 positionIdTrue = nrAdapter.getPositionId(questionId, true);
         ctf.safeTransferFrom(alice, brian, positionIdTrue, _amount, "");
 
         vm.stopPrank();
@@ -185,7 +185,7 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
             while (i < questionCount) {
                 if (indexSet & (1 << i) > 0) {
                     uint256 positionId =
-                        nrAdapter.computePositionId(nrAdapter.computeQuestionId(marketId, i), false);
+                        nrAdapter.getPositionId(nrAdapter.getQuestionId(marketId, i), false);
                     ctf.balanceOf(alice, positionId);
                     vm.prank(alice);
                     ctf.safeTransferFrom(alice, brian, positionId, _amount, "");
@@ -199,7 +199,7 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
         ctf.setApprovalForAll(address(nrAdapter), true);
 
         // convert positions
-        nrAdapter.convertPositions(marketId, _amount, indexSet);
+        nrAdapter.convertPositions(marketId, indexSet, _amount);
 
         // check balances
         {
@@ -212,7 +212,7 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
                     // NO
 
                     uint256 positionId =
-                        nrAdapter.computePositionId(nrAdapter.computeQuestionId(marketId, i), false);
+                        nrAdapter.getPositionId(nrAdapter.getQuestionId(marketId, i), false);
 
                     // brian has no more of this no token
                     assertEq(ctf.balanceOf(brian, positionId), 0);
@@ -222,7 +222,7 @@ contract NegRiskAdapterTest is TestHelper, INegRiskAdapterEE {
                 } else {
                     // YES
                     uint256 positionId =
-                        nrAdapter.computePositionId(nrAdapter.computeQuestionId(marketId, i), true);
+                        nrAdapter.getPositionId(nrAdapter.getQuestionId(marketId, i), true);
 
                     // brian has _amount of each yes token, after fees
                     assertEq(ctf.balanceOf(brian, positionId), _amount - feeAmount);

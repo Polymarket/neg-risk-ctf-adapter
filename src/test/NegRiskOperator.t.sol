@@ -46,7 +46,7 @@ contract NegRiskOperatorTest is TestHelper {
         vm.prank(alice);
         bytes32 marketId = nrOperator.prepareMarket(_data, _feeBips);
 
-        assertEq(marketId, nrAdapter.computeMarketId(address(nrOperator), _data));
+        assertEq(marketId, nrAdapter.getMarketId(address(nrOperator), _data));
         assertEq(nrAdapter.getFeeBips(marketId), _feeBips);
         assertEq(nrAdapter.getOracle(marketId), address(nrOperator));
         assertEq(nrAdapter.getQuestionCount(marketId), 0);

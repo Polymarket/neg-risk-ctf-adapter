@@ -48,7 +48,7 @@ contract VaultSnapshots is TestHelper, GasSnapshot {
 
         vm.startPrank(brian);
         usdc.approve(address(ctf), amount);
-        ctf.splitPosition(address(usdc), bytes32(0), conditionId, Helpers._partition(), amount);
+        ctf.splitPosition(address(usdc), bytes32(0), conditionId, Helpers.partition(), amount);
 
         vm.stopPrank();
 

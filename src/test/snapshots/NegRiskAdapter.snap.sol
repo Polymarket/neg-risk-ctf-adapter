@@ -107,7 +107,7 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         snapEnd();
     }
 
-    function test_snap_convertPositions_1() public {
+    function test_snap_convertPositions_5() public {
         uint256 amount = 10_000_000;
         bytes memory data = new bytes(0);
         uint256 feeBips = 0;
@@ -133,13 +133,79 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
             ++i;
         }
 
-        uint256 positionId0False =
-            nrAdapter.computePositionId(nrAdapter.computeQuestionId(marketId, 0), false);
         vm.startPrank(alice);
         ctf.setApprovalForAll(address(nrAdapter), true);
 
-        snapStart("NegRiskAdapter_convertPositions_1");
-        nrAdapter.convertPositions(marketId, amount, 1);
+        snapStart("NegRiskAdapter_convertPositions_5");
+        nrAdapter.convertPositions(marketId, 1, amount);
+        snapEnd();
+    }
+
+    function test_snap_convertPositions_32() public {
+        uint256 amount = 10_000_000;
+        bytes memory data = new bytes(0);
+        uint256 feeBips = 0;
+
+        // prepare question
+        vm.prank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+
+        uint256 i = 0;
+        uint256 questionCount = 32;
+        while (i < questionCount) {
+            vm.prank(oracle);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // split position to alice
+            vm.startPrank(alice);
+            usdc.mint(alice, amount);
+            usdc.approve(address(nrAdapter), amount);
+            nrAdapter.splitPosition(conditionId, amount);
+            vm.stopPrank();
+
+            ++i;
+        }
+
+        vm.startPrank(alice);
+        ctf.setApprovalForAll(address(nrAdapter), true);
+
+        snapStart("NegRiskAdapter_convertPositions_32");
+        nrAdapter.convertPositions(marketId, 1, amount);
+        snapEnd();
+    }
+
+    function test_snap_convertPositions_64() public {
+        uint256 amount = 10_000_000;
+        bytes memory data = new bytes(0);
+        uint256 feeBips = 0;
+
+        // prepare question
+        vm.prank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+
+        uint256 i = 0;
+        uint256 questionCount = 64;
+        while (i < questionCount) {
+            vm.prank(oracle);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // split position to alice
+            vm.startPrank(alice);
+            usdc.mint(alice, amount);
+            usdc.approve(address(nrAdapter), amount);
+            nrAdapter.splitPosition(conditionId, amount);
+            vm.stopPrank();
+
+            ++i;
+        }
+
+        vm.startPrank(alice);
+        ctf.setApprovalForAll(address(nrAdapter), true);
+
+        snapStart("NegRiskAdapter_convertPositions_64");
+        nrAdapter.convertPositions(marketId, 1, amount);
         snapEnd();
     }
 }

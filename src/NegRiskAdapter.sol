@@ -24,13 +24,24 @@ interface INegRiskAdapterEE {
     error FeeBipsOutOfBounds();
 
     event MarketPrepared(bytes32 indexed marketId, address indexed oracle, bytes data);
-
     event QuestionPrepared(
         bytes32 indexed questionId,
         bytes32 indexed marketId,
         uint256 index,
         address indexed oracle,
         bytes data
+    );
+    event OutcomeReported(bytes32 indexed questionId, bool indexed outcome);
+    event PositionSplit(address indexed stakeholder, bytes32 indexed conditionId, uint256 amount);
+    event PositionsMerge(address indexed stakeholder, bytes32 indexed conditionId, uint256 amount);
+    event PositionsConverted(
+        address indexed stakeholder,
+        bytes32 indexed marketId,
+        uint256 indexed indexSet,
+        uint256 amount
+    );
+    event PayoutRedemption(
+        address indexed redeemer, bytes32 indexed conditionId, uint256[] amounts
     );
 }
 
@@ -73,11 +84,15 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
                                   IDS
     //////////////////////////////////////////////////////////////*/
 
-    function computeMarketId(address _oracle, bytes memory _data) public pure returns (bytes32) {
+    function getMarketId(address _oracle, bytes memory _data) public pure returns (bytes32) {
         return keccak256(abi.encode(_oracle, _data)) & MASK;
     }
 
-    function computeQuestionId(bytes32 _marketId, uint256 _outcomeIndex)
+    function getMarketId(bytes32 _questionId) public pure returns (bytes32) {
+        return _questionId & MASK;
+    }
+
+    function getQuestionId(bytes32 _marketId, uint256 _outcomeIndex)
         public
         pure
         returns (bytes32)
@@ -87,15 +102,19 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         }
     }
 
-    function getMarketId(bytes32 _questionId) public pure returns (bytes32) {
-        return _questionId & MASK;
-    }
-
     function getQuestionIndex(bytes32 _questionId) public pure returns (uint256) {
         return uint256(_questionId & ~MASK);
     }
 
-    function computePositionId(bytes32 _questionId, bool _outcome) public view returns (uint256) {
+    function getConditionId(bytes32 _questionId) public view returns (bytes32) {
+        return CTHelpers.getConditionId(
+            address(this), // oracle
+            _questionId,
+            2 // outcomeCount
+        );
+    }
+
+    function getPositionId(bytes32 _questionId, bool _outcome) public view returns (uint256) {
         bytes32 collectionId = CTHelpers.getCollectionId(
             bytes32(0),
             getConditionId(_questionId),
@@ -125,16 +144,16 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     function splitPosition(bytes32 _conditionId, uint256 _amount) public {
         col.transferFrom(msg.sender, address(this), _amount);
         wcol.wrap(address(this), _amount);
-
-        ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers._partition(), _amount);
-
+        ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
         ctf.safeBatchTransferFrom(
             address(this),
             msg.sender,
-            Helpers._positionIds(address(wcol), _conditionId),
-            Helpers._values(2, _amount),
+            Helpers.positionIds(address(wcol), _conditionId),
+            Helpers.values(2, _amount),
             ""
         );
+
+        emit PositionSplit(msg.sender, _conditionId, _amount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -155,16 +174,16 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     }
 
     function mergePositions(bytes32 _conditionId, uint256 _amount) public {
-        uint256[] memory positionIds = Helpers._positionIds(address(wcol), _conditionId);
+        uint256[] memory positionIds = Helpers.positionIds(address(wcol), _conditionId);
 
         // get conditional tokens from sender
         ctf.safeBatchTransferFrom(
-            msg.sender, address(this), positionIds, Helpers._values(2, _amount), ""
+            msg.sender, address(this), positionIds, Helpers.values(2, _amount), ""
         );
-
-        ctf.mergePositions(address(wcol), bytes32(0), _conditionId, Helpers._partition(), _amount);
-
+        ctf.mergePositions(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
         wcol.unwrap(msg.sender, _amount);
+
+        emit PositionsMerge(msg.sender, _conditionId, _amount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -172,14 +191,14 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     //////////////////////////////////////////////////////////////*/
 
     function redeemPositions(bytes32 _conditionId, uint256[] calldata _amounts) public {
-        uint256[] memory positionIds = Helpers._positionIds(address(wcol), _conditionId);
+        uint256[] memory positionIds = Helpers.positionIds(address(wcol), _conditionId);
 
         // get conditional tokens from sender
         ctf.safeBatchTransferFrom(msg.sender, address(this), positionIds, _amounts, "");
-
-        ctf.redeemPositions(address(wcol), bytes32(0), _conditionId, Helpers._partition());
-
+        ctf.redeemPositions(address(wcol), bytes32(0), _conditionId, Helpers.partition());
         wcol.unwrap(msg.sender, wcol.balanceOf(address(this)));
+
+        emit PayoutRedemption(msg.sender, _conditionId, _amounts);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -188,7 +207,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
 
     /// @notice _indexSet looks like 0x0000....01101
     /// @notice the lsb is the _first_ question
-    function convertPositions(bytes32 _marketId, uint256 _amount, uint256 _indexSet) external {
+    function convertPositions(bytes32 _marketId, uint256 _indexSet, uint256 _amount) external {
         MarketData md = getMarketData(_marketId);
         uint256 questionCount = md.questionCount();
 
@@ -213,11 +232,11 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
             uint256 yesIndex = questionCount;
 
             while (index < questionCount) {
-                bytes32 questionId = computeQuestionId(_marketId, index);
+                bytes32 questionId = getQuestionId(_marketId, index);
 
                 if ((_indexSet & (1 << index)) > 0) {
                     // NO
-                    positionIds[noIndex] = computePositionId(questionId, false);
+                    positionIds[noIndex] = getPositionId(questionId, false);
 
                     unchecked {
                         ++noIndex;
@@ -226,7 +245,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
                     // YES
 
                     _splitPosition(getConditionId(questionId), _amount);
-                    positionIds[yesIndex] = computePositionId(questionId, true);
+                    positionIds[yesIndex] = getPositionId(questionId, true);
 
                     unchecked {
                         --yesIndex;
@@ -255,7 +274,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
                 msg.sender,
                 noTokenBurnAddress,
                 noPositionIds,
-                Helpers._values(noPositionIds.length, _amount),
+                Helpers.values(noPositionIds.length, _amount),
                 ""
             );
         }
@@ -269,7 +288,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
                 address(this),
                 msg.sender,
                 yesPositionIds,
-                Helpers._values(yesPositionIds.length, amountOut),
+                Helpers.values(yesPositionIds.length, amountOut),
                 ""
             );
 
@@ -277,15 +296,17 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
                 address(this),
                 vault,
                 yesPositionIds,
-                Helpers._values(yesPositionIds.length, feeAmount),
+                Helpers.values(yesPositionIds.length, feeAmount),
                 ""
             );
         }
 
-        uint256 multiplier = (noPositionIds.length - 1);
+        uint256 multiplier = noPositionIds.length - 1;
 
         wcol.release(msg.sender, multiplier * amountOut);
         wcol.release(vault, multiplier * feeAmount);
+
+        emit PositionsConverted(msg.sender, _marketId, _indexSet, _amount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -298,7 +319,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         }
 
         address oracle = msg.sender;
-        bytes32 marketId = computeMarketId(oracle, _data);
+        bytes32 marketId = getMarketId(oracle, _data);
 
         MarketData md = getMarketData(marketId);
 
@@ -329,7 +350,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         }
 
         uint256 index = md.questionCount();
-        bytes32 questionId = computeQuestionId(_marketId, index);
+        bytes32 questionId = getQuestionId(_marketId, index);
 
         setMarketData(_marketId, md.incrementQuestionCount());
         ctf.prepareCondition(address(this), questionId, 2);
@@ -366,8 +387,10 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
             md = md.determine(questionIndex);
         }
 
-        bytes32 questionId = computeQuestionId(marketId, questionIndex);
-        ctf.reportPayouts(questionId, Helpers._payouts(_outcome));
+        bytes32 questionId = getQuestionId(marketId, questionIndex);
+        ctf.reportPayouts(questionId, Helpers.payouts(_outcome));
+
+        emit OutcomeReported(_questionId, _outcome);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -375,15 +398,6 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     //////////////////////////////////////////////////////////////*/
 
     function _splitPosition(bytes32 _conditionId, uint256 _amount) internal {
-        ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers._partition(), _amount);
-    }
-
-    // to-do: this is not internal!
-    function getConditionId(bytes32 _questionId) public view returns (bytes32) {
-        return CTHelpers.getConditionId(
-            address(this), // oracle
-            _questionId,
-            2 // outcomeCount
-        );
+        ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
     }
 }
