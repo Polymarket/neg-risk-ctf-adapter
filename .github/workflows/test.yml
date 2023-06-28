@@ -1,17 +1,13 @@
-name: test
-
-on: workflow_dispatch
-
-env:
-  FOUNDRY_PROFILE: ci
+on: [pull_request]
 
 jobs:
-  check:
+  tests:
     strategy:
       fail-fast: true
 
-    name: Foundry project
+    name: Tests
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
         with:
