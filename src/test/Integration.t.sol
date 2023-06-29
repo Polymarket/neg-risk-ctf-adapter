@@ -69,9 +69,10 @@ contract IntegrationTest is TestHelper {
 
     function test_initializeAndPrepare() public {
         bytes memory data = new bytes(100);
+        uint256 feeBips = 0;
 
         vm.prank(admin);
-        bytes32 marketId = nrOperator.prepareMarket(data, 0);
+        bytes32 marketId = nrOperator.prepareMarket(feeBips, data);
 
         address rewardToken = address(usdc);
         uint256 reward = 1_000_000;
@@ -92,9 +93,10 @@ contract IntegrationTest is TestHelper {
 
     function test_initializePrepareAndResolve() public {
         bytes memory data = new bytes(100);
+        uint256 feeBips = 0;
 
         vm.prank(admin);
-        bytes32 marketId = nrOperator.prepareMarket(data, 0);
+        bytes32 marketId = nrOperator.prepareMarket(feeBips, data);
 
         address rewardToken = address(usdc);
         uint256 reward = 1_000_000;

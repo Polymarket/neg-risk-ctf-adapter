@@ -10,11 +10,11 @@ contract NegRiskAdapter_ReportOutcome_Test is NegRiskAdapter_SetUp {
     function setUp() public override {
         NegRiskAdapter_SetUp.setUp();
 
-        bytes memory data = new bytes(0);
         uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
 
         vm.startPrank(oracle);
-        marketId = nrAdapter.prepareMarket(data, feeBips);
+        marketId = nrAdapter.prepareMarket(feeBips, data);
 
         uint256 i = 0;
 

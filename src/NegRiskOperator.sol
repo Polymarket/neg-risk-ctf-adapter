@@ -16,6 +16,9 @@ interface INegRiskOperatorEE {
     error NotEligibleForEmergencyResolution();
     error DelayPeriodNotOver();
     error ResultNotAvailable();
+    error QuestionWithRequestIdAlreadyPrepared(bytes32 requestId);
+    error InvalidRequestId(bytes32 requestId);
+    error QuestionAlreadyReported(bytes32 questionId);
 }
 
 /// @title NegRiskOperator
@@ -65,12 +68,12 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                              PREPARE MARKET
     //////////////////////////////////////////////////////////////*/
 
-    function prepareMarket(bytes calldata _data, uint256 _feeBips)
+    function prepareMarket(uint256 _feeBips, bytes calldata _data)
         external
         onlyAdmin
         returns (bytes32)
     {
-        return nrAdapter.prepareMarket(_data, _feeBips);
+        return nrAdapter.prepareMarket(_feeBips, _data);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -82,7 +85,12 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         onlyAdmin
         returns (bytes32)
     {
+        if (questionIds[_requestId] != bytes32(0)) {
+            revert QuestionWithRequestIdAlreadyPrepared(_requestId);
+        }
+
         bytes32 questionId = nrAdapter.prepareQuestion(_marketId, _data);
+
         questionIds[_requestId] = questionId;
         return questionId;
     }
@@ -91,8 +99,6 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                              REPORT PAYOUTS
     //////////////////////////////////////////////////////////////*/
 
-    // to-do: consider enforcing valid questionId
-    // and that it hasnt already been reported
     function reportPayouts(bytes32 _requestId, uint256[] calldata _payouts) external onlyOracle {
         if (_payouts.length != 2) {
             revert InvalidPayouts(_payouts);
@@ -106,6 +112,14 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         }
 
         bytes32 questionId = questionIds[_requestId];
+
+        if (questionId == bytes32(0)) {
+            revert InvalidRequestId(_requestId);
+        }
+
+        if (reportedAt[questionId] > 0) {
+            revert QuestionAlreadyReported(questionId);
+        }
 
         results[questionId] = payout0 == 1 ? true : false;
         reportedAt[questionId] = block.timestamp;

@@ -18,7 +18,7 @@ contract NegRiskAdapterTest is NegRiskAdapter_SetUp {
 
         // prepare market
         vm.prank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
 
         uint256 i = 0;
 

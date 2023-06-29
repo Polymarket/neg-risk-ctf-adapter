@@ -39,7 +39,7 @@ abstract contract MarketDataManager {
                                INITIALIZE
     //////////////////////////////////////////////////////////////*/
 
-    function initializeMarket(bytes32 _marketId, address _oracle, uint256 _feeBips) internal {
+    function initializeMarketData(bytes32 _marketId, address _oracle, uint256 _feeBips) internal {
         marketData[_marketId] = MarketDataLib.initialize(_oracle, _feeBips);
     }
 
