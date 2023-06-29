@@ -5,11 +5,12 @@ import {NegRiskAdapter_SetUp} from "src/test/NegRiskAdapter/NegRiskAdapterSetUp.
 
 contract NegRiskAdapter_SplitPosition_Test is NegRiskAdapter_SetUp {
     function test_splitPosition(uint256 _amount) public {
-        bytes memory data = new bytes(0);
         uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
+
         // prepare question
         vm.startPrank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
         bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
         bytes32 conditionId = nrAdapter.getConditionId(questionId);
         vm.stopPrank();

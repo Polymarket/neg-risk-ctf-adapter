@@ -10,7 +10,7 @@ contract NegRiskAdapter_MergePositions_Test is NegRiskAdapter_SetUp {
 
         // prepare question
         vm.startPrank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
         bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
         bytes32 conditionId = nrAdapter.getConditionId(questionId);
         vm.stopPrank();

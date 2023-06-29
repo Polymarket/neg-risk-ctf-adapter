@@ -27,22 +27,22 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
     }
 
     function test_snap_prepareMarket() public {
-        bytes memory data = new bytes(128);
         uint256 feeBips = 1_00;
+        bytes memory data = new bytes(128);
 
         vm.startPrank(oracle);
 
         snapStart("NegRiskAdapter_prepareMarket");
-        nrAdapter.prepareMarket(data, feeBips);
+        nrAdapter.prepareMarket(feeBips, data);
         snapEnd();
     }
 
     function test_snap_prepareQuestion() public {
-        bytes memory data = new bytes(128);
         uint256 feeBips = 1_00;
+        bytes memory data = new bytes(128);
 
         vm.startPrank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
 
         uint256 i = 0;
 
@@ -59,12 +59,12 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
 
     function test_snap_splitPosition() public {
         uint256 amount = 10_000_000;
-        bytes memory data = new bytes(0);
         uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
 
         // prepare question
         vm.startPrank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
         bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
         bytes32 conditionId = nrAdapter.getConditionId(questionId);
         vm.stopPrank();
@@ -84,12 +84,12 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
 
     function test_snap_mergePositions() public {
         uint256 amount = 10_000_000;
-        bytes memory data = new bytes(0);
         uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
 
         // prepare question
         vm.startPrank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
         bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
         bytes32 conditionId = nrAdapter.getConditionId(questionId);
         vm.stopPrank();
@@ -109,12 +109,12 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
 
     function test_snap_convertPositions_5() public {
         uint256 amount = 10_000_000;
-        bytes memory data = new bytes(0);
         uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
 
         // prepare question
         vm.prank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
 
         uint256 i = 0;
         uint256 questionCount = 5;
@@ -143,12 +143,12 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
 
     function test_snap_convertPositions_32() public {
         uint256 amount = 10_000_000;
-        bytes memory data = new bytes(0);
         uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
 
         // prepare question
         vm.prank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
 
         uint256 i = 0;
         uint256 questionCount = 32;
@@ -177,12 +177,12 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
 
     function test_snap_convertPositions_64() public {
         uint256 amount = 10_000_000;
-        bytes memory data = new bytes(0);
         uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
 
         // prepare question
         vm.prank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
 
         uint256 i = 0;
         uint256 questionCount = 64;

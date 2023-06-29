@@ -12,20 +12,22 @@ import {USDC} from "src/test/mock/USDC.sol";
 contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
     USDC usdc;
     WrappedCollateral wcol;
+    address owner;
 
     function setUp() public {
         usdc = new USDC();
+        owner = _getAndLabelAddress("owner");
 
         uint8 decimals = usdc.decimals();
 
-        vm.prank(alice);
+        vm.prank(owner);
         wcol = new WrappedCollateral(address(usdc), decimals);
     }
 
     function test_mintAndBurn() public {
         uint256 amount = 10_000_000;
 
-        vm.startPrank(alice);
+        vm.startPrank(owner);
 
         snapStart("WrappedCollateral_mint");
         wcol.mint(amount);
@@ -41,8 +43,8 @@ contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
     function test_wrapAndUnwrap() public {
         uint256 amount = 10_000_000;
 
-        usdc.mint(brian, amount);
-        vm.startPrank(brian);
+        usdc.mint(owner, amount);
+        vm.startPrank(owner);
 
         usdc.approve(address(wcol), amount);
 
@@ -50,8 +52,12 @@ contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
         wcol.wrap(brian, amount);
         snapEnd();
 
+        vm.stopPrank();
+
+        vm.startPrank(brian);
+
         snapStart("WrappedCollateral_unwrap");
-        wcol.unwrap(brian, amount);
+        wcol.unwrap(alice, amount);
         snapEnd();
 
         vm.stopPrank();

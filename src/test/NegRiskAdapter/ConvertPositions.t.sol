@@ -2,6 +2,7 @@
 pragma solidity ^0.8.15;
 
 import {NegRiskAdapter_SetUp} from "src/test/NegRiskAdapter/NegRiskAdapterSetUp.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 contract NegRiskAdapterTest is NegRiskAdapter_SetUp {
     function test_convertPositions(uint256 _a, uint256 _b, uint128 _amount) public {
@@ -18,9 +19,9 @@ contract NegRiskAdapterTest is NegRiskAdapter_SetUp {
 
         // prepare market
         vm.prank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(data, feeBips);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
 
-        uint256 i = 0;
+        uint8 i = 0;
 
         // prepare questions and split initial liquidity to alice
         while (i < questionCount) {
@@ -47,7 +48,7 @@ contract NegRiskAdapterTest is NegRiskAdapter_SetUp {
             while (i < questionCount) {
                 if (indexSet & (1 << i) > 0) {
                     uint256 positionId =
-                        nrAdapter.getPositionId(nrAdapter.getQuestionId(marketId, i), false);
+                        nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), false);
                     ctf.balanceOf(alice, positionId);
                     vm.prank(alice);
                     ctf.safeTransferFrom(alice, brian, positionId, _amount, "");
@@ -74,7 +75,7 @@ contract NegRiskAdapterTest is NegRiskAdapter_SetUp {
                     // NO
 
                     uint256 positionId =
-                        nrAdapter.getPositionId(nrAdapter.getQuestionId(marketId, i), false);
+                        nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), false);
 
                     // brian has no more of this no token
                     assertEq(ctf.balanceOf(brian, positionId), 0);
@@ -84,7 +85,7 @@ contract NegRiskAdapterTest is NegRiskAdapter_SetUp {
                 } else {
                     // YES
                     uint256 positionId =
-                        nrAdapter.getPositionId(nrAdapter.getQuestionId(marketId, i), true);
+                        nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), true);
 
                     // brian has _amount of each yes token, after fees
                     assertEq(ctf.balanceOf(brian, positionId), _amount - feeAmount);

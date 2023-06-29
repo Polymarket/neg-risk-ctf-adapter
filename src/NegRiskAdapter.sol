@@ -8,6 +8,7 @@ import {Admin} from "src/modules/Admin.sol";
 import {MarketData, MarketDataManager} from "src/modules/MarketDataManager.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
@@ -23,13 +24,11 @@ interface INegRiskAdapterEE {
     error MarketAlreadyDetermined();
     error FeeBipsOutOfBounds();
 
-    event MarketPrepared(bytes32 indexed marketId, address indexed oracle, bytes data);
+    event MarketPrepared(
+        bytes32 indexed marketId, address indexed oracle, uint256 feeBips, bytes data
+    );
     event QuestionPrepared(
-        bytes32 indexed questionId,
-        bytes32 indexed marketId,
-        uint256 index,
-        address indexed oracle,
-        bytes data
+        bytes32 indexed questionId, bytes32 indexed marketId, uint256 index, bytes data
     );
     event OutcomeReported(bytes32 indexed questionId, bool indexed outcome);
     event PositionSplit(address indexed stakeholder, bytes32 indexed conditionId, uint256 amount);
@@ -83,28 +82,6 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     /*//////////////////////////////////////////////////////////////
                                   IDS
     //////////////////////////////////////////////////////////////*/
-
-    function getMarketId(address _oracle, bytes memory _data) public pure returns (bytes32) {
-        return keccak256(abi.encode(_oracle, _data)) & MASK;
-    }
-
-    function getMarketId(bytes32 _questionId) public pure returns (bytes32) {
-        return _questionId & MASK;
-    }
-
-    function getQuestionId(bytes32 _marketId, uint256 _outcomeIndex)
-        public
-        pure
-        returns (bytes32)
-    {
-        unchecked {
-            return bytes32(uint256(_marketId) + _outcomeIndex);
-        }
-    }
-
-    function getQuestionIndex(bytes32 _questionId) public pure returns (uint256) {
-        return uint256(_questionId & ~MASK);
-    }
 
     function getConditionId(bytes32 _questionId) public view returns (bytes32) {
         return CTHelpers.getConditionId(
@@ -232,7 +209,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
             uint256 yesIndex = questionCount;
 
             while (index < questionCount) {
-                bytes32 questionId = getQuestionId(_marketId, index);
+                bytes32 questionId = NegRiskIdLib.getQuestionId(_marketId, uint8(index));
 
                 if ((_indexSet & (1 << index)) > 0) {
                     // NO
@@ -313,13 +290,13 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
                              PREPARE MARKET
     //////////////////////////////////////////////////////////////*/
 
-    function prepareMarket(bytes memory _data, uint256 _feeBips) external returns (bytes32) {
+    function prepareMarket(uint256 _feeBips, bytes calldata _data) external returns (bytes32) {
         if (_feeBips > 1_00_00) {
             revert FeeBipsOutOfBounds();
         }
 
         address oracle = msg.sender;
-        bytes32 marketId = getMarketId(oracle, _data);
+        bytes32 marketId = NegRiskIdLib.getMarketId(oracle, _data);
 
         MarketData md = getMarketData(marketId);
 
@@ -327,8 +304,8 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
             revert MarketAlreadyPrepared();
         }
 
-        initializeMarket(marketId, oracle, _feeBips);
-        emit MarketPrepared(marketId, oracle, _data);
+        initializeMarketData(marketId, oracle, _feeBips);
+        emit MarketPrepared(marketId, oracle, _feeBips, _data);
 
         return marketId;
     }
@@ -337,7 +314,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
                             PREPARE QUESTION
     //////////////////////////////////////////////////////////////*/
 
-    function prepareQuestion(bytes32 _marketId, bytes memory _data) external returns (bytes32) {
+    function prepareQuestion(bytes32 _marketId, bytes calldata _data) external returns (bytes32) {
         MarketData md = getMarketData(_marketId);
         address oracle = md.oracle();
 
@@ -350,12 +327,12 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         }
 
         uint256 index = md.questionCount();
-        bytes32 questionId = getQuestionId(_marketId, index);
+        bytes32 questionId = NegRiskIdLib.getQuestionId(_marketId, uint8(index));
 
         setMarketData(_marketId, md.incrementQuestionCount());
         ctf.prepareCondition(address(this), questionId, 2);
 
-        emit QuestionPrepared(questionId, _marketId, index, oracle, _data);
+        emit QuestionPrepared(questionId, _marketId, index, _data);
 
         return questionId;
     }
@@ -365,8 +342,8 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     //////////////////////////////////////////////////////////////*/
 
     function reportOutcome(bytes32 _questionId, bool _outcome) external {
-        bytes32 marketId = getMarketId(_questionId);
-        uint256 questionIndex = getQuestionIndex(_questionId);
+        bytes32 marketId = NegRiskIdLib.getMarketId(_questionId);
+        uint256 questionIndex = NegRiskIdLib.getQuestionIndex(_questionId);
 
         MarketData md = getMarketData(marketId);
 
@@ -387,8 +364,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
             setMarketData(marketId, md.determine(questionIndex));
         }
 
-        bytes32 questionId = getQuestionId(marketId, questionIndex);
-        ctf.reportPayouts(questionId, Helpers.payouts(_outcome));
+        ctf.reportPayouts(_questionId, Helpers.payouts(_outcome));
 
         emit OutcomeReported(_questionId, _outcome);
     }

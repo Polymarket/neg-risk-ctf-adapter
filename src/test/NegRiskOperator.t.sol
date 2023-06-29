@@ -9,6 +9,7 @@ import {DeployLib} from "src/dev/libraries/DeployLib.sol";
 import {USDC} from "src/test/mock/USDC.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {NegRiskOperator} from "src/NegRiskOperator.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 contract NegRiskOperatorTest is TestHelper {
     NegRiskAdapter nrAdapter;
@@ -31,7 +32,10 @@ contract NegRiskOperatorTest is TestHelper {
         wcol = nrAdapter.wcol();
 
         vm.prank(alice);
-        nrOperator = new NegRiskOperator(address(nrAdapter), oracle);
+        nrOperator = new NegRiskOperator(address(nrAdapter));
+
+        vm.prank(alice);
+        nrOperator.setOracle(oracle);
     }
 
     function test_initialState() public {
@@ -40,13 +44,13 @@ contract NegRiskOperatorTest is TestHelper {
         assertEq(nrOperator.isAdmin(alice), true);
     }
 
-    function test_prepareMarket(bytes memory _data, uint256 _feeBips) public {
+    function test_prepareMarket(uint256 _feeBips, bytes memory _data) public {
         _feeBips = bound(_feeBips, 0, 1_00_00);
 
         vm.prank(alice);
-        bytes32 marketId = nrOperator.prepareMarket(_data, _feeBips);
+        bytes32 marketId = nrOperator.prepareMarket(_feeBips, _data);
 
-        assertEq(marketId, nrAdapter.getMarketId(address(nrOperator), _data));
+        assertEq(marketId, NegRiskIdLib.getMarketId(address(nrOperator), _data));
         assertEq(nrAdapter.getFeeBips(marketId), _feeBips);
         assertEq(nrAdapter.getOracle(marketId), address(nrOperator));
         assertEq(nrAdapter.getQuestionCount(marketId), 0);
@@ -57,13 +61,13 @@ contract NegRiskOperatorTest is TestHelper {
         uint256 feeBips = 0;
 
         vm.prank(alice);
-        bytes32 marketId = nrOperator.prepareMarket(data, feeBips);
+        bytes32 marketId = nrOperator.prepareMarket(feeBips, data);
 
         vm.prank(alice);
         bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);
 
         assertEq(nrAdapter.getQuestionCount(marketId), 1);
-        assertEq(nrAdapter.getMarketId(questionId), marketId);
+        assertEq(NegRiskIdLib.getMarketId(questionId), marketId);
     }
 
     function test_reportPayouts(bytes32 _requestId, bool _result) public {
@@ -71,7 +75,7 @@ contract NegRiskOperatorTest is TestHelper {
         uint256 feeBips = 0;
 
         vm.prank(alice);
-        bytes32 marketId = nrOperator.prepareMarket(data, feeBips);
+        bytes32 marketId = nrOperator.prepareMarket(feeBips, data);
 
         vm.prank(alice);
         bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);
@@ -88,7 +92,7 @@ contract NegRiskOperatorTest is TestHelper {
         uint256 feeBips = 0;
 
         vm.prank(alice);
-        bytes32 marketId = nrOperator.prepareMarket(data, feeBips);
+        bytes32 marketId = nrOperator.prepareMarket(feeBips, data);
 
         vm.prank(alice);
         bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);
@@ -127,7 +131,7 @@ contract NegRiskOperatorTest is TestHelper {
         uint256 feeBips = 0;
 
         vm.prank(alice);
-        bytes32 marketId = nrOperator.prepareMarket(data, feeBips);
+        bytes32 marketId = nrOperator.prepareMarket(feeBips, data);
 
         vm.prank(alice);
         bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);

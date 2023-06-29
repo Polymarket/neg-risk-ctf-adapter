@@ -3,12 +3,14 @@ pragma solidity 0.8.20;
 
 import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
 import {Auth} from "src/modules/Auth.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 /// @title INegRiskOperatorEE
 /// @notice NegRiskOperator Errors and Events
 // to-do: add events !
 interface INegRiskOperatorEE {
     error OnlyOracle();
+    error OracleAlreadyInitialized();
     error OnlyNegRiskAdapter();
     error InvalidPayouts(uint256[] payouts);
     error OnlyFlagged();
@@ -16,6 +18,11 @@ interface INegRiskOperatorEE {
     error NotEligibleForEmergencyResolution();
     error DelayPeriodNotOver();
     error ResultNotAvailable();
+    error QuestionWithRequestIdAlreadyPrepared(bytes32 requestId);
+    error InvalidRequestId(bytes32 requestId);
+    error QuestionAlreadyReported(bytes32 questionId);
+
+    event PayoutsReported(bytes32 indexed marketId, uint256 index, bool result);
 }
 
 /// @title NegRiskOperator
@@ -26,7 +33,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     //////////////////////////////////////////////////////////////*/
 
     NegRiskAdapter public immutable nrAdapter;
-    address public immutable oracle;
+    address public oracle;
     uint256 public constant delayPeriod = 2 hours;
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
@@ -52,8 +59,12 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _nrAdapter, address _oracle) {
+    constructor(address _nrAdapter) {
         nrAdapter = NegRiskAdapter(_nrAdapter);
+    }
+
+    function setOracle(address _oracle) external onlyAdmin {
+        if (oracle != address(0)) revert OracleAlreadyInitialized();
         oracle = _oracle;
     }
 
@@ -61,12 +72,12 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                              PREPARE MARKET
     //////////////////////////////////////////////////////////////*/
 
-    function prepareMarket(bytes calldata _data, uint256 _feeBips)
+    function prepareMarket(uint256 _feeBips, bytes calldata _data)
         external
         onlyAdmin
         returns (bytes32)
     {
-        return nrAdapter.prepareMarket(_data, _feeBips);
+        return nrAdapter.prepareMarket(_feeBips, _data);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -78,7 +89,12 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         onlyAdmin
         returns (bytes32)
     {
+        if (questionIds[_requestId] != bytes32(0)) {
+            revert QuestionWithRequestIdAlreadyPrepared(_requestId);
+        }
+
         bytes32 questionId = nrAdapter.prepareQuestion(_marketId, _data);
+
         questionIds[_requestId] = questionId;
         return questionId;
     }
@@ -87,8 +103,6 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                              REPORT PAYOUTS
     //////////////////////////////////////////////////////////////*/
 
-    // to-do: consider enforcing valid questionId
-    // and that it hasnt already been reported
     function reportPayouts(bytes32 _requestId, uint256[] calldata _payouts) external onlyOracle {
         if (_payouts.length != 2) {
             revert InvalidPayouts(_payouts);
@@ -102,6 +116,21 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         }
 
         bytes32 questionId = questionIds[_requestId];
+
+        if (questionId == bytes32(0)) {
+            revert InvalidRequestId(_requestId);
+        }
+
+        if (reportedAt[questionId] > 0) {
+            revert QuestionAlreadyReported(questionId);
+        }
+
+        bool result = payout0 == 1 ? true : false;
+        uint256 reportedAt_ = block.timestamp;
+
+        emit PayoutsReported(
+            NegRiskIdLib.getMarketId(questionId), NegRiskIdLib.getQuestionIndex(questionId), result
+        );
 
         results[questionId] = payout0 == 1 ? true : false;
         reportedAt[questionId] = block.timestamp;
