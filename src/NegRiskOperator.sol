@@ -64,7 +64,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     }
 
     function setOracle(address _oracle) external onlyAdmin {
-        if (oracle == address(0)) revert OracleAlreadyInitialized();
+        if (oracle != address(0)) revert OracleAlreadyInitialized();
         oracle = _oracle;
     }
 
