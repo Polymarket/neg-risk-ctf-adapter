@@ -10,13 +10,15 @@ import {USDC} from "src/test/mock/USDC.sol";
 contract WrappedCollateralTest is TestHelper {
     USDC usdc;
     WrappedCollateral wcol;
+    address owner;
 
     function setUp() public {
         usdc = new USDC();
+        owner = _getAndLabelAddress("owner");
 
         uint8 decimals = usdc.decimals();
 
-        vm.prank(alice);
+        vm.prank(owner);
         wcol = new WrappedCollateral(address(usdc), decimals);
     }
 
@@ -25,22 +27,22 @@ contract WrappedCollateralTest is TestHelper {
         assertEq(wcol.symbol(), "WC");
         assertEq(wcol.decimals(), usdc.decimals());
         assertEq(wcol.underlying(), address(usdc));
-        assertEq(wcol.owner(), alice);
+        assertEq(wcol.owner(), owner);
     }
 
     function test_wrap(uint64 _a, uint64 _b) public {
         uint256 small = uint256(_a);
         uint256 big = uint256(_b) + small;
 
-        usdc.mint(brian, big);
+        usdc.mint(owner, big);
 
-        vm.prank(brian);
+        vm.prank(owner);
         usdc.approve(address(wcol), small);
 
-        vm.prank(brian);
+        vm.prank(owner);
         wcol.wrap(carly, small);
 
-        assertEq(usdc.balanceOf(brian), big - small);
+        assertEq(usdc.balanceOf(owner), big - small);
         assertEq(wcol.balanceOf(carly), small);
         assertEq(usdc.balanceOf(address(wcol)), small);
     }
@@ -49,12 +51,12 @@ contract WrappedCollateralTest is TestHelper {
         uint256 small = uint256(_a);
         uint256 big = uint256(_b) + small;
 
-        usdc.mint(brian, big);
+        usdc.mint(owner, big);
 
-        vm.prank(brian);
+        vm.prank(owner);
         usdc.approve(address(wcol), big);
 
-        vm.prank(brian);
+        vm.prank(owner);
         wcol.wrap(brian, big);
 
         vm.prank(brian);
@@ -69,30 +71,30 @@ contract WrappedCollateralTest is TestHelper {
         uint256 small = uint256(_a);
         uint256 big = uint256(_b) + small;
 
-        vm.prank(alice);
+        vm.prank(owner);
         wcol.mint(big);
 
-        vm.prank(alice);
+        vm.prank(owner);
         wcol.burn(small);
 
-        assertEq(wcol.balanceOf(alice), big - small);
+        assertEq(wcol.balanceOf(owner), big - small);
     }
 
     function test_wrapAndBurn(uint64 _a, uint64 _b) public {
         uint256 small = uint256(_a);
         uint256 big = uint256(_b) + small;
 
-        usdc.mint(alice, big);
+        usdc.mint(owner, big);
 
-        vm.prank(alice);
+        vm.prank(owner);
         usdc.approve(address(wcol), big);
 
-        vm.prank(alice);
-        wcol.wrap(alice, big);
+        vm.prank(owner);
+        wcol.wrap(owner, big);
 
-        vm.prank(alice);
+        vm.prank(owner);
         wcol.burn(small);
 
-        assertEq(wcol.balanceOf(alice), big - small);
+        assertEq(wcol.balanceOf(owner), big - small);
     }
 }

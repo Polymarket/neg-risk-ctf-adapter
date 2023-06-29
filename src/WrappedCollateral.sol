@@ -40,15 +40,6 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
     }
 
     /*//////////////////////////////////////////////////////////////
-                                  WRAP
-    //////////////////////////////////////////////////////////////*/
-
-    function wrap(address _to, uint256 _amount) external {
-        ERC20(underlying).transferFrom(msg.sender, address(this), _amount);
-        _mint(_to, _amount);
-    }
-
-    /*//////////////////////////////////////////////////////////////
                                  UNWRAP
     //////////////////////////////////////////////////////////////*/
 
@@ -60,6 +51,11 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
     /*//////////////////////////////////////////////////////////////
                                  ADMIN
     //////////////////////////////////////////////////////////////*/
+
+    function wrap(address _to, uint256 _amount) external onlyOwner {
+        ERC20(underlying).transferFrom(msg.sender, address(this), _amount);
+        _mint(_to, _amount);
+    }
 
     function burn(uint256 _amount) external onlyOwner {
         _burn(msg.sender, _amount);
