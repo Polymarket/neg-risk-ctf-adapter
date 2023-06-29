@@ -8,6 +8,7 @@ import {Admin} from "src/modules/Admin.sol";
 import {MarketData, MarketDataManager} from "src/modules/MarketDataManager.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
@@ -81,28 +82,6 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     /*//////////////////////////////////////////////////////////////
                                   IDS
     //////////////////////////////////////////////////////////////*/
-
-    function getMarketId(address _oracle, bytes memory _data) public pure returns (bytes32) {
-        return keccak256(abi.encode(_oracle, _data)) & MASK;
-    }
-
-    function getMarketId(bytes32 _questionId) public pure returns (bytes32) {
-        return _questionId & MASK;
-    }
-
-    function getQuestionId(bytes32 _marketId, uint256 _outcomeIndex)
-        public
-        pure
-        returns (bytes32)
-    {
-        unchecked {
-            return bytes32(uint256(_marketId) + _outcomeIndex);
-        }
-    }
-
-    function getQuestionIndex(bytes32 _questionId) public pure returns (uint256) {
-        return uint256(_questionId & ~MASK);
-    }
 
     function getConditionId(bytes32 _questionId) public view returns (bytes32) {
         return CTHelpers.getConditionId(
@@ -230,7 +209,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
             uint256 yesIndex = questionCount;
 
             while (index < questionCount) {
-                bytes32 questionId = getQuestionId(_marketId, index);
+                bytes32 questionId = NegRiskIdLib.getQuestionId(_marketId, uint8(index));
 
                 if ((_indexSet & (1 << index)) > 0) {
                     // NO
@@ -317,7 +296,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         }
 
         address oracle = msg.sender;
-        bytes32 marketId = getMarketId(oracle, _data);
+        bytes32 marketId = NegRiskIdLib.getMarketId(oracle, _data);
 
         MarketData md = getMarketData(marketId);
 
@@ -348,7 +327,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         }
 
         uint256 index = md.questionCount();
-        bytes32 questionId = getQuestionId(_marketId, index);
+        bytes32 questionId = NegRiskIdLib.getQuestionId(_marketId, uint8(index));
 
         setMarketData(_marketId, md.incrementQuestionCount());
         ctf.prepareCondition(address(this), questionId, 2);
@@ -363,8 +342,8 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     //////////////////////////////////////////////////////////////*/
 
     function reportOutcome(bytes32 _questionId, bool _outcome) external {
-        bytes32 marketId = getMarketId(_questionId);
-        uint256 questionIndex = getQuestionIndex(_questionId);
+        bytes32 marketId = NegRiskIdLib.getMarketId(_questionId);
+        uint256 questionIndex = NegRiskIdLib.getQuestionIndex(_questionId);
 
         MarketData md = getMarketData(marketId);
 
@@ -385,8 +364,7 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
             setMarketData(marketId, md.determine(questionIndex));
         }
 
-        bytes32 questionId = getQuestionId(marketId, questionIndex);
-        ctf.reportPayouts(questionId, Helpers.payouts(_outcome));
+        ctf.reportPayouts(_questionId, Helpers.payouts(_outcome));
 
         emit OutcomeReported(_questionId, _outcome);
     }

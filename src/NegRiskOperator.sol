@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
 import {Auth} from "src/modules/Auth.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 /// @title INegRiskOperatorEE
 /// @notice NegRiskOperator Errors and Events
@@ -19,6 +20,8 @@ interface INegRiskOperatorEE {
     error QuestionWithRequestIdAlreadyPrepared(bytes32 requestId);
     error InvalidRequestId(bytes32 requestId);
     error QuestionAlreadyReported(bytes32 questionId);
+
+    event PayoutsReported(bytes32 indexed marketId, uint256 index, bool result);
 }
 
 /// @title NegRiskOperator
@@ -120,6 +123,13 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         if (reportedAt[questionId] > 0) {
             revert QuestionAlreadyReported(questionId);
         }
+
+        bool result = payout0 == 1 ? true : false;
+        uint256 reportedAt_ = block.timestamp;
+
+        emit PayoutsReported(
+            NegRiskIdLib.getMarketId(questionId), NegRiskIdLib.getQuestionIndex(questionId), result
+        );
 
         results[questionId] = payout0 == 1 ? true : false;
         reportedAt[questionId] = block.timestamp;

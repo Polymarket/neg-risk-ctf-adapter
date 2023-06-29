@@ -2,6 +2,7 @@
 pragma solidity ^0.8.15;
 
 import {NegRiskAdapter_SetUp} from "src/test/NegRiskAdapter/NegRiskAdapterSetUp.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 contract NegRiskAdapter_PrepareQuestion_Test is NegRiskAdapter_SetUp {
     function test_prepareQuestion() public {
@@ -11,11 +12,11 @@ contract NegRiskAdapter_PrepareQuestion_Test is NegRiskAdapter_SetUp {
         vm.startPrank(oracle);
         bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
 
-        uint256 i = 0;
+        uint8 i = 0;
 
         while (i < 255) {
             nrAdapter.prepareQuestion(marketId, data);
-            assertEq(nrAdapter.getQuestionId(marketId, i), bytes32(uint256(marketId) + i));
+            assertEq(NegRiskIdLib.getQuestionId(marketId, i), bytes32(uint256(marketId) + i));
             assertEq(nrAdapter.getQuestionCount(marketId), i + 1);
             ++i;
         }

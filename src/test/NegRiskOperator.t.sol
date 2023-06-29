@@ -9,6 +9,7 @@ import {DeployLib} from "src/dev/libraries/DeployLib.sol";
 import {USDC} from "src/test/mock/USDC.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {NegRiskOperator} from "src/NegRiskOperator.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 contract NegRiskOperatorTest is TestHelper {
     NegRiskAdapter nrAdapter;
@@ -49,7 +50,7 @@ contract NegRiskOperatorTest is TestHelper {
         vm.prank(alice);
         bytes32 marketId = nrOperator.prepareMarket(_feeBips, _data);
 
-        assertEq(marketId, nrAdapter.getMarketId(address(nrOperator), _data));
+        assertEq(marketId, NegRiskIdLib.getMarketId(address(nrOperator), _data));
         assertEq(nrAdapter.getFeeBips(marketId), _feeBips);
         assertEq(nrAdapter.getOracle(marketId), address(nrOperator));
         assertEq(nrAdapter.getQuestionCount(marketId), 0);
@@ -66,7 +67,7 @@ contract NegRiskOperatorTest is TestHelper {
         bytes32 questionId = nrOperator.prepareQuestion(marketId, data, _requestId);
 
         assertEq(nrAdapter.getQuestionCount(marketId), 1);
-        assertEq(nrAdapter.getMarketId(questionId), marketId);
+        assertEq(NegRiskIdLib.getMarketId(questionId), marketId);
     }
 
     function test_reportPayouts(bytes32 _requestId, bool _result) public {
