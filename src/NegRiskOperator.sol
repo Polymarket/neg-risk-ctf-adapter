@@ -10,6 +10,7 @@ import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 // to-do: add events !
 interface INegRiskOperatorEE {
     error OnlyOracle();
+    error OracleAlreadyInitialized();
     error OnlyNegRiskAdapter();
     error InvalidPayouts(uint256[] payouts);
     error OnlyFlagged();
@@ -63,7 +64,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     }
 
     function setOracle(address _oracle) external onlyAdmin {
-        require(oracle == address(0), "oracle already set");
+        if (oracle == address(0)) revert OracleAlreadyInitialized();
         oracle = _oracle;
     }
 
