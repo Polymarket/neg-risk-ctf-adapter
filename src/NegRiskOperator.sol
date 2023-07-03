@@ -7,7 +7,7 @@ import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 /// @title INegRiskOperatorEE
 /// @notice NegRiskOperator Errors and Events
-// to-do: add events !
+// to-do: add (more) events !
 interface INegRiskOperatorEE {
     error OnlyOracle();
     error OracleAlreadyInitialized();

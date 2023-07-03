@@ -17,7 +17,7 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 interface INegRiskAdapterEE {
     error IndexOutOfBounds();
     error OnlyOracle();
-    error IndexSetTooSmall();
+    error InvalidIndexSet();
     error MarketAlreadyPrepared();
     error MarketNotPrepared();
     error LengthMismatch();
@@ -40,7 +40,7 @@ interface INegRiskAdapterEE {
         uint256 amount
     );
     event PayoutRedemption(
-        address indexed redeemer, bytes32 indexed conditionId, uint256[] amounts
+        address indexed redeemer, bytes32 indexed conditionId, uint256[] amounts, uint256 payout
     );
 }
 
@@ -73,9 +73,9 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         vault = _vault;
 
         wcol = new WrappedCollateral(_collateral, col.decimals());
-
         // approve the ctf to transfer wcol on our behalf
         wcol.approve(_ctf, type(uint256).max);
+        // approve wcol to transfer collateral on our behalf
         col.approve(address(wcol), type(uint256).max);
     }
 
@@ -95,11 +95,10 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         bytes32 collectionId = CTHelpers.getCollectionId(
             bytes32(0),
             getConditionId(_questionId),
-            _outcome ? 1 : 2 // 1 is yes, 2 is no
+            _outcome ? 1 : 2 // 1 (0b01) is yes, 2 (0b10) is no
         );
 
         uint256 positionId = CTHelpers.getPositionId(address(wcol), collectionId);
-
         return positionId;
     }
 
@@ -175,9 +174,13 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         // get conditional tokens from sender
         ctf.safeBatchTransferFrom(msg.sender, address(this), positionIds, _amounts, "");
         ctf.redeemPositions(address(wcol), bytes32(0), _conditionId, Helpers.partition());
-        wcol.unwrap(msg.sender, wcol.balanceOf(address(this)));
 
-        emit PayoutRedemption(msg.sender, _conditionId, _amounts);
+        uint256 payout = wcol.balanceOf(address(this));
+        if (payout > 0) {
+            wcol.unwrap(msg.sender, wcol.balanceOf(address(this)));
+        }
+
+        emit PayoutRedemption(msg.sender, _conditionId, _amounts, payout);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -191,12 +194,11 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
         uint256 questionCount = md.questionCount();
 
         if ((_indexSet >> questionCount) > 0) {
-            revert IndexOutOfBounds();
+            revert InvalidIndexSet();
         }
 
-        // to-do: add errors
-        if (_indexSet == 0) revert();
-        if (_amount == 0) revert();
+        if (_indexSet == 0) revert InvalidIndexSet();
+        if (_amount == 0) return ();
 
         uint256[] memory yesPositionIds;
         uint256[] memory noPositionIds;
@@ -222,7 +224,6 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
                     }
                 } else {
                     // YES
-
                     _splitPosition(getConditionId(questionId), _amount);
                     positionIds[yesIndex] = getPositionId(questionId, true);
 

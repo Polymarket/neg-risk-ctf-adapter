@@ -4,7 +4,6 @@ pragma solidity 0.8.20;
 import {MarketData, MarketDataLib} from "src/types/MarketData.sol";
 
 abstract contract MarketDataManager {
-    // marketId => marketData
     mapping(bytes32 _marketId => MarketData) internal marketData;
 
     /*//////////////////////////////////////////////////////////////
@@ -43,7 +42,7 @@ abstract contract MarketDataManager {
         marketData[_marketId] = MarketDataLib.initialize(_oracle, _feeBips);
     }
 
-    function setMarketData(bytes32 _marketId, MarketData _md) internal {
-        marketData[_marketId] = _md;
+    function setMarketData(bytes32 _marketId, MarketData _marketData) internal {
+        marketData[_marketId] = _marketData;
     }
 }

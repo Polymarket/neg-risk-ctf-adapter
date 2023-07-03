@@ -15,16 +15,19 @@ contract NegRiskAdapter_RedeemPositions_Test is NegRiskAdapter_SetUp {
         uint256 feeBips = 0;
         bytes memory data = new bytes(0);
 
-        vm.startPrank(oracle);
-        marketId = nrAdapter.prepareMarket(feeBips, data);
-
-        uint8 i = 0;
-
-        questionId = nrAdapter.prepareQuestion(marketId, data);
-        conditionId = nrAdapter.getConditionId(questionId);
+        // prepare a market with a single question
+        {
+            vm.startPrank(oracle);
+            marketId = nrAdapter.prepareMarket(feeBips, data);
+            questionId = nrAdapter.prepareQuestion(marketId, data);
+            conditionId = nrAdapter.getConditionId(questionId);
+        }
     }
 
     function test_redeemPositions(uint256 _amount) public {
+        // split position to alice
+        // distribute yes positions to brian
+        // distribute no positions to carly
         {
             vm.startPrank(alice);
             usdc.mint(alice, _amount);
@@ -39,12 +42,13 @@ contract NegRiskAdapter_RedeemPositions_Test is NegRiskAdapter_SetUp {
             vm.stopPrank();
         }
 
-        // REPORT OUTCOME
+        // report outcome as false
         {
             vm.prank(oracle);
             nrAdapter.reportOutcome(questionId, false);
         }
 
+        // redeem worthless positions
         {
             vm.startPrank(brian);
             ctf.setApprovalForAll(address(nrAdapter), true);
@@ -56,6 +60,7 @@ contract NegRiskAdapter_RedeemPositions_Test is NegRiskAdapter_SetUp {
             vm.stopPrank();
         }
 
+        // redeem valuable positions
         {
             vm.startPrank(carly);
             ctf.setApprovalForAll(address(nrAdapter), true);
@@ -66,17 +71,5 @@ contract NegRiskAdapter_RedeemPositions_Test is NegRiskAdapter_SetUp {
             assertEq(usdc.balanceOf(carly), _amount);
             vm.stopPrank();
         }
-
-        // bytes32 conditionId = nrAdapter.getConditionId(questionId);
-        // assertEq(ctf.payoutDenominator(conditionId), 1);
-
-        // // payouts are [0,1]
-        // assertEq(ctf.payoutNumerators(conditionId, 0), 0);
-        // assertEq(ctf.payoutNumerators(conditionId, 1), 1);
-
-        // // the market is not determined
-        // // these are the initial values
-        // assertEq(nrAdapter.getDetermined(marketId), false);
-        // assertEq(nrAdapter.getResult(marketId), 0);
     }
 }
