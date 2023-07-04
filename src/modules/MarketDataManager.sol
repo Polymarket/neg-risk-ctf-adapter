@@ -2,8 +2,18 @@
 pragma solidity 0.8.20;
 
 import {MarketData, MarketDataLib} from "src/types/MarketData.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
-abstract contract MarketDataManager {
+interface IMarketStateManagerEE {
+    error IndexOutOfBounds();
+    error OnlyOracle();
+    error MarketNotPrepared();
+    error MarketAlreadyPrepared();
+    error MarketAlreadyDetermined();
+    error FeeBipsOutOfBounds();
+}
+
+abstract contract MarketStateManager is IMarketStateManagerEE {
     mapping(bytes32 _marketId => MarketData) internal marketData;
 
     /*//////////////////////////////////////////////////////////////
@@ -35,14 +45,55 @@ abstract contract MarketDataManager {
     }
 
     /*//////////////////////////////////////////////////////////////
-                               INITIALIZE
+                                INTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    function initializeMarketData(bytes32 _marketId, address _oracle, uint256 _feeBips) internal {
-        marketData[_marketId] = MarketDataLib.initialize(_oracle, _feeBips);
+    function _prepareMarket(uint256 _feeBips, bytes memory _data)
+        internal
+        returns (bytes32 marketId)
+    {
+        address oracle = msg.sender;
+        marketId = NegRiskIdLib.getMarketId(oracle, _data);
+        MarketData md = marketData[marketId];
+
+        if (md.oracle() != address(0)) revert MarketAlreadyPrepared();
+        if (_feeBips > 1_00_00) revert FeeBipsOutOfBounds();
+
+        marketData[marketId] = MarketDataLib.initialize(oracle, _feeBips);
     }
 
-    function setMarketData(bytes32 _marketId, MarketData _marketData) internal {
-        marketData[_marketId] = _marketData;
+    function _prepareQuestion(bytes32 _marketId)
+        internal
+        returns (bytes32 questionId, uint256 index)
+    {
+        MarketData md = marketData[_marketId];
+        address oracle = marketData[_marketId].oracle();
+
+        if (oracle == address(0)) revert MarketNotPrepared();
+        if (oracle != msg.sender) revert OnlyOracle();
+
+        index = md.questionCount();
+        questionId = NegRiskIdLib.getQuestionId(_marketId, uint8(index));
+        marketData[_marketId] = md.incrementQuestionCount();
+    }
+
+    function _reportOutcome(bytes32 _questionId, bool _outcome)
+        internal
+        returns (bytes32 marketId, uint256 questionIndex)
+    {
+        marketId = NegRiskIdLib.getMarketId(_questionId);
+        questionIndex = NegRiskIdLib.getQuestionIndex(_questionId);
+
+        MarketData data = marketData[marketId];
+        address oracle = data.oracle();
+
+        if (oracle == address(0)) revert MarketNotPrepared();
+        if (oracle != msg.sender) revert OnlyOracle();
+        if (questionIndex >= data.questionCount()) revert IndexOutOfBounds();
+
+        if (_outcome == true) {
+            if (data.determined()) revert MarketAlreadyDetermined();
+            marketData[marketId] = data.determine(questionIndex);
+        }
     }
 }

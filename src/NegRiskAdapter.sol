@@ -5,7 +5,11 @@ import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
 
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {Admin} from "src/modules/Admin.sol";
-import {MarketData, MarketDataManager} from "src/modules/MarketDataManager.sol";
+import {
+    MarketData,
+    MarketStateManager,
+    IMarketStateManagerEE
+} from "src/modules/MarketDataManager.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
 import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
@@ -14,23 +18,17 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 
 /// @title INegRiskAdapterEE
 /// @notice NegRiskAdapter Errors and Events
-interface INegRiskAdapterEE {
-    error IndexOutOfBounds();
-    error OnlyOracle();
+interface INegRiskAdapterEE is IMarketStateManagerEE {
     error InvalidIndexSet();
-    error MarketAlreadyPrepared();
-    error MarketNotPrepared();
     error LengthMismatch();
-    error MarketAlreadyDetermined();
-    error FeeBipsOutOfBounds();
 
     event MarketPrepared(
         bytes32 indexed marketId, address indexed oracle, uint256 feeBips, bytes data
     );
     event QuestionPrepared(
-        bytes32 indexed questionId, bytes32 indexed marketId, uint256 index, bytes data
+        bytes32 indexed marketId, bytes32 indexed questionId, uint256 index, bytes data
     );
-    event OutcomeReported(bytes32 indexed questionId, bool indexed outcome);
+    event OutcomeReported(bytes32 indexed marketId, bytes32 indexed questionId, bool outcome);
     event PositionSplit(address indexed stakeholder, bytes32 indexed conditionId, uint256 amount);
     event PositionsMerge(address indexed stakeholder, bytes32 indexed conditionId, uint256 amount);
     event PositionsConverted(
@@ -46,7 +44,7 @@ interface INegRiskAdapterEE {
 
 /// @title NegRiskAdapter
 /// @author Mike Shrieve (mike@polymarket.com)
-contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataManager {
+contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE {
     /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
@@ -192,12 +190,12 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     function convertPositions(bytes32 _marketId, uint256 _indexSet, uint256 _amount) external {
         MarketData md = getMarketData(_marketId);
         uint256 questionCount = md.questionCount();
-
-        if ((_indexSet >> questionCount) > 0) {
-            revert InvalidIndexSet();
-        }
+        uint256 feeBips = md.feeBips();
 
         if (_indexSet == 0) revert InvalidIndexSet();
+        if ((_indexSet >> questionCount) > 0) revert InvalidIndexSet();
+
+        // if _amount is 0, return early
         if (_amount == 0) return ();
 
         uint256[] memory yesPositionIds;
@@ -294,21 +292,8 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     //////////////////////////////////////////////////////////////*/
 
     function prepareMarket(uint256 _feeBips, bytes calldata _data) external returns (bytes32) {
-        if (_feeBips > 1_00_00) {
-            revert FeeBipsOutOfBounds();
-        }
-
-        address oracle = msg.sender;
-        bytes32 marketId = NegRiskIdLib.getMarketId(oracle, _data);
-
-        MarketData md = getMarketData(marketId);
-
-        if (md.oracle() != address(0)) {
-            revert MarketAlreadyPrepared();
-        }
-
-        initializeMarketData(marketId, oracle, _feeBips);
-        emit MarketPrepared(marketId, oracle, _feeBips, _data);
+        bytes32 marketId = _prepareMarket(_feeBips, _data);
+        emit MarketPrepared(marketId, msg.sender, _feeBips, _data);
 
         return marketId;
     }
@@ -318,24 +303,11 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     //////////////////////////////////////////////////////////////*/
 
     function prepareQuestion(bytes32 _marketId, bytes calldata _data) external returns (bytes32) {
-        MarketData md = getMarketData(_marketId);
-        address oracle = md.oracle();
+        (bytes32 questionId, uint256 questionIndex) = _prepareQuestion(_marketId);
 
-        if (oracle == address(0)) {
-            revert MarketNotPrepared();
-        }
-
-        if (oracle != msg.sender) {
-            revert OnlyOracle();
-        }
-
-        uint256 index = md.questionCount();
-        bytes32 questionId = NegRiskIdLib.getQuestionId(_marketId, uint8(index));
-
-        setMarketData(_marketId, md.incrementQuestionCount());
         ctf.prepareCondition(address(this), questionId, 2);
 
-        emit QuestionPrepared(questionId, _marketId, index, _data);
+        emit QuestionPrepared(_marketId, questionId, questionIndex, _data);
 
         return questionId;
     }
@@ -345,37 +317,18 @@ contract NegRiskAdapter is INegRiskAdapterEE, ERC1155TokenReceiver, MarketDataMa
     //////////////////////////////////////////////////////////////*/
 
     function reportOutcome(bytes32 _questionId, bool _outcome) external {
-        bytes32 marketId = NegRiskIdLib.getMarketId(_questionId);
-        uint256 questionIndex = NegRiskIdLib.getQuestionIndex(_questionId);
-
-        MarketData md = getMarketData(marketId);
-
-        if (md.oracle() == address(0)) {
-            revert MarketNotPrepared();
-        }
-
-        if (md.oracle() != msg.sender) {
-            revert OnlyOracle();
-        }
-
-        if (questionIndex >= md.questionCount()) {
-            revert IndexOutOfBounds();
-        }
-
-        if (_outcome == true) {
-            if (md.determined()) revert MarketAlreadyDetermined();
-            setMarketData(marketId, md.determine(questionIndex));
-        }
+        (bytes32 marketId, uint256 questionIndex) = _reportOutcome(_questionId, _outcome);
 
         ctf.reportPayouts(_questionId, Helpers.payouts(_outcome));
 
-        emit OutcomeReported(_questionId, _outcome);
+        emit OutcomeReported(marketId, _questionId, _outcome);
     }
 
     /*//////////////////////////////////////////////////////////////
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
 
+    // to-do: just this one internal function ?
     function _splitPosition(bytes32 _conditionId, uint256 _amount) internal {
         ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
     }
