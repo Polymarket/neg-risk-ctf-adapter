@@ -33,6 +33,10 @@ interface INegRiskAdapterEE is IMarketStateManagerEE {
 
 /// @title NegRiskAdapter
 /// @author Mike Shrieve (mike@polymarket.com)
+/// @notice Adapter for the CTF enabling the linking of a set binary markets where only one can resolve true
+/// @notice The adapter prevents more than one question in the same multi-outcome market from resolving true
+/// @notice And the adapter allows for the conversion of a set of no positions, to collateral plus the set of
+/// complementary yes positions
 contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE {
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -69,6 +73,9 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                                   IDS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Returns the conditionId for a given questionId
+    /// @param _questionId  - the questionId
+    /// @return conditionId - the corresponding conditionId
     function getConditionId(bytes32 _questionId) public view returns (bytes32) {
         return CTHelpers.getConditionId(
             address(this), // oracle
@@ -77,6 +84,10 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         );
     }
 
+    /// @notice Returns the positionId for a given questionId and outcome
+    /// @param _questionId  - the questionId
+    /// @param _outcome     - the boolean outcome
+    /// @return positionId  - the corresponding positionId
     function getPositionId(bytes32 _questionId, bool _outcome) public view returns (uint256) {
         bytes32 collectionId = CTHelpers.getCollectionId(
             bytes32(0),
@@ -94,6 +105,13 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                              SPLIT POSITION
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Splits collateral to a complete set of conditional tokens for a single question
+    /// @notice This function signature is the same as the CTF's splitPosition
+    /// @param _collateralToken - the collateral token, must be the same as the adapter's collateral token
+    /// @param _parentCollectionId - unused
+    /// @param _conditionId - the conditionId for the question
+    /// @param _partition - unused
+    /// @param _amount - the amount of collateral to split
     function splitPosition(address _collateralToken, bytes32, bytes32 _conditionId, uint256[] calldata, uint256 _amount)
         external
     {
@@ -101,6 +119,9 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         splitPosition(_conditionId, _amount);
     }
 
+    /// @notice Splits collateral to a complete set of conditional tokens for a single question
+    /// @param _conditionId - the conditionId for the question
+    /// @param _amount - the amount of collateral to split
     function splitPosition(bytes32 _conditionId, uint256 _amount) public {
         col.transferFrom(msg.sender, address(this), _amount);
         wcol.wrap(address(this), _amount);
@@ -116,6 +137,13 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                             MERGE POSITIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Merges a complete set of conditional tokens for a single question to collateral
+    /// @notice This function signature is the same as the CTF's mergePositions
+    /// @param _collateralToken - the collateral token, must be the same as the adapter's collateral token
+    /// @param _parentCollectionId - unused
+    /// @param _conditionId - the conditionId for the question
+    /// @param _partition - unused
+    /// @param _amount - the amount of collateral to merge
     function mergePositions(
         address _collateralToken,
         bytes32,
@@ -127,6 +155,9 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         mergePositions(_conditionId, _amount);
     }
 
+    /// @notice Merges a complete set of conditional tokens for a single question to collateral
+    /// @param _conditionId - the conditionId for the question
+    /// @param _amount - the amount of collateral to merge
     function mergePositions(bytes32 _conditionId, uint256 _amount) public {
         uint256[] memory positionIds = Helpers.positionIds(address(wcol), _conditionId);
 
@@ -142,6 +173,11 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                             REDEEM POSITION
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Redeem a set of conditional tokens for collateral
+    /// @param _conditionId - conditionId of the conditional tokens to redeem
+    /// @param _amounts - amounts of conditional tokens to redeem
+    /// _amounts should always have length 2, with the first element being the amount of yes tokens to redeem and the
+    /// second element being the amount of no tokens to redeem
     function redeemPositions(bytes32 _conditionId, uint256[] calldata _amounts) public {
         uint256[] memory positionIds = Helpers.positionIds(address(wcol), _conditionId);
 
@@ -161,8 +197,13 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                             CONVERT POSITION
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice _indexSet looks like 0x0000....01101
-    /// @notice the lsb is the _first_ question
+    /// @notice Convert a set of no positions to the complementary set of yes positions plus collateral proportional to
+    /// (# of no positions - 1)
+    /// @notice If the market has a fee, the fee is taken from both collateral and the yes positions
+    /// @param _marketId - the marketId
+    /// @param _indexSet - the set of positions to convert, expressed as an index set where the lsb is the first
+    /// question
+    /// @param _amount   - the amount of tokens to convert
     function convertPositions(bytes32 _marketId, uint256 _indexSet, uint256 _amount) external {
         MarketData md = getMarketData(_marketId);
         uint256 questionCount = md.questionCount();
@@ -182,7 +223,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256 index = 0;
         uint256 noPositionCount;
 
-        // count number of noPositions
+        // count number of no positions
         while (index < questionCount) {
             unchecked {
                 if ((_indexSet & (1 << index)) > 0) {
@@ -263,6 +304,10 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                              PREPARE MARKET
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Prepare a multi-outcome market
+    /// @param _feeBips  - the fee for the market, out of 1_00_00
+    /// @param _data     - metadata for the market
+    /// @return marketId - the marketId
     function prepareMarket(uint256 _feeBips, bytes calldata _data) external returns (bytes32) {
         bytes32 marketId = _prepareMarket(_feeBips, _data);
         emit MarketPrepared(marketId, msg.sender, _feeBips, _data);
@@ -288,6 +333,9 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                              REPORT OUTCOME
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Report the outcome of a question
+    /// @param _questionId - the questionId to report
+    /// @param _outcome    - the outcome of the question
     function reportOutcome(bytes32 _questionId, bool _outcome) external {
         (bytes32 marketId, uint256 questionIndex) = _reportOutcome(_questionId, _outcome);
 
