@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.19;
 
 import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
 import {Auth} from "src/modules/Auth.sol";
@@ -72,11 +72,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
                              PREPARE MARKET
     //////////////////////////////////////////////////////////////*/
 
-    function prepareMarket(uint256 _feeBips, bytes calldata _data)
-        external
-        onlyAdmin
-        returns (bytes32)
-    {
+    function prepareMarket(uint256 _feeBips, bytes calldata _data) external onlyAdmin returns (bytes32) {
         return nrAdapter.prepareMarket(_feeBips, _data);
     }
 
@@ -128,9 +124,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         bool result = payout0 == 1 ? true : false;
         uint256 reportedAt_ = block.timestamp;
 
-        emit PayoutsReported(
-            NegRiskIdLib.getMarketId(questionId), NegRiskIdLib.getQuestionIndex(questionId), result
-        );
+        emit PayoutsReported(NegRiskIdLib.getMarketId(questionId), NegRiskIdLib.getQuestionIndex(questionId), result);
 
         results[questionId] = payout0 == 1 ? true : false;
         reportedAt[questionId] = block.timestamp;

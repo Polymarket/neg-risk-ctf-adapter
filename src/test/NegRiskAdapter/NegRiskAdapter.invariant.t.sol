@@ -15,13 +15,14 @@ import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 contract NegRiskAdapterInvariantsHandler is Test {
     NegRiskAdapter public nra;
     USDC public usdc;
-    uint256 public val;
-    uint256 public x = 1;
+    IConditionalTokens public ctf;
+
     bytes32 marketId;
 
-    constructor(address _usdc, address _nra, bytes32 _marketId) {
+    constructor(address _usdc, address _nra, address _ctf, bytes32 _marketId) {
         nra = NegRiskAdapter(_nra);
         usdc = USDC(_usdc);
+        ctf = IConditionalTokens(_ctf);
         marketId = _marketId;
     }
 
@@ -35,8 +36,25 @@ contract NegRiskAdapterInvariantsHandler is Test {
         bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, _index);
         bytes32 conditionId = nra.getConditionId(questionId);
         nra.splitPosition(conditionId, _amount);
-        vm.stopPrank();
+        // vm.stopPrank();
     }
+
+    function merge(uint8 _index, uint256 _amount) public {
+        _index %= 16;
+
+        // vm.startPrank(alice);
+        ctf.setApprovalForAll(address(nra), true);
+        bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, _index);
+        bytes32 conditionId = nra.getConditionId(questionId);
+        nra.splitPosition(conditionId, _amount);
+        // vm.stopPrank();
+    }
+
+    function convert(uint16 _indexSet, uint256 _amount) public {
+        nra.convertPositions(marketId, _indexSet, _amount);
+    }
+
+    function convert2(uint256 _amount) public {}
 }
 
 contract NegRiskAdapterInvariants is Test {
@@ -59,21 +77,23 @@ contract NegRiskAdapterInvariants is Test {
         uint256 questionCount = 16;
         uint8 i = 0;
 
-        bytes memory data = new bytes(0);
+        // prepare one market
         vm.prank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(0, data);
+        bytes32 marketId = nrAdapter.prepareMarket(0, "");
 
+        // make 16 questions in the market
         while (i < questionCount) {
             vm.prank(oracle);
-            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, "");
             ++i;
         }
 
-        handler = new NegRiskAdapterInvariantsHandler(address(usdc), address(nrAdapter), marketId);
+        handler = new NegRiskAdapterInvariantsHandler(address(usdc), address(nrAdapter), address(ctf), marketId);
 
         targetContract(address(handler));
     }
 
+    // this is only true if no conversions have been made
     function invariant_badInvariantThisShouldFail() public {
         assertEq(usdc.balanceOf(address(wcol)), wcol.balanceOf(address(ctf)));
     }

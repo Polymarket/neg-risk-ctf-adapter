@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.19;
 
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
 
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {Admin} from "src/modules/Admin.sol";
-import {
-    MarketData,
-    MarketStateManager,
-    IMarketStateManagerEE
-} from "src/modules/MarketDataManager.sol";
+import {MarketData, MarketStateManager, IMarketStateManagerEE} from "src/modules/MarketDataManager.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
 import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
@@ -21,25 +17,18 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 interface INegRiskAdapterEE is IMarketStateManagerEE {
     error InvalidIndexSet();
     error LengthMismatch();
+    error UnexpectedCollateralToken();
+    error NoConvertiblePositions();
 
-    event MarketPrepared(
-        bytes32 indexed marketId, address indexed oracle, uint256 feeBips, bytes data
-    );
-    event QuestionPrepared(
-        bytes32 indexed marketId, bytes32 indexed questionId, uint256 index, bytes data
-    );
+    event MarketPrepared(bytes32 indexed marketId, address indexed oracle, uint256 feeBips, bytes data);
+    event QuestionPrepared(bytes32 indexed marketId, bytes32 indexed questionId, uint256 index, bytes data);
     event OutcomeReported(bytes32 indexed marketId, bytes32 indexed questionId, bool outcome);
     event PositionSplit(address indexed stakeholder, bytes32 indexed conditionId, uint256 amount);
     event PositionsMerge(address indexed stakeholder, bytes32 indexed conditionId, uint256 amount);
     event PositionsConverted(
-        address indexed stakeholder,
-        bytes32 indexed marketId,
-        uint256 indexed indexSet,
-        uint256 amount
+        address indexed stakeholder, bytes32 indexed marketId, uint256 indexed indexSet, uint256 amount
     );
-    event PayoutRedemption(
-        address indexed redeemer, bytes32 indexed conditionId, uint256[] amounts, uint256 payout
-    );
+    event PayoutRedemption(address indexed redeemer, bytes32 indexed conditionId, uint256[] amounts, uint256 payout);
 }
 
 /// @title NegRiskAdapter
@@ -54,8 +43,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     WrappedCollateral public immutable wcol;
     address public immutable vault;
 
-    address public constant noTokenBurnAddress =
-        address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
+    address public constant noTokenBurnAddress = address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
     uint256 public constant feeDenominator = 1_00_00;
     bytes32 private constant MASK = bytes32(type(uint256).max) << 8;
 
@@ -100,20 +88,16 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         return positionId;
     }
 
-    // to-do: and external view helpers for marketId/questionId (?)
+    // to-do: add external view helpers for marketId/questionId (?)
 
     /*//////////////////////////////////////////////////////////////
                              SPLIT POSITION
     //////////////////////////////////////////////////////////////*/
 
-    function splitPosition(
-        address _collateralToken,
-        bytes32,
-        bytes32 _conditionId,
-        uint256[] calldata,
-        uint256 _amount
-    ) external {
-        require(_collateralToken == address(col), "CTFWrapper: collateralToken != collateral");
+    function splitPosition(address _collateralToken, bytes32, bytes32 _conditionId, uint256[] calldata, uint256 _amount)
+        external
+    {
+        if (_collateralToken != address(col)) revert UnexpectedCollateralToken();
         splitPosition(_conditionId, _amount);
     }
 
@@ -122,11 +106,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         wcol.wrap(address(this), _amount);
         ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
         ctf.safeBatchTransferFrom(
-            address(this),
-            msg.sender,
-            Helpers.positionIds(address(wcol), _conditionId),
-            Helpers.values(2, _amount),
-            ""
+            address(this), msg.sender, Helpers.positionIds(address(wcol), _conditionId), Helpers.values(2, _amount), ""
         );
 
         emit PositionSplit(msg.sender, _conditionId, _amount);
@@ -137,15 +117,13 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     //////////////////////////////////////////////////////////////*/
 
     function mergePositions(
-        IERC20 collateralToken,
+        address _collateralToken,
         bytes32,
         bytes32 _conditionId,
         uint256[] calldata,
         uint256 _amount
     ) external {
-        require(
-            collateralToken == IERC20(address(col)), "CTFWrapper: collateralToken != collateral"
-        );
+        if (_collateralToken != address(col)) revert UnexpectedCollateralToken();
         mergePositions(_conditionId, _amount);
     }
 
@@ -153,9 +131,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256[] memory positionIds = Helpers.positionIds(address(wcol), _conditionId);
 
         // get conditional tokens from sender
-        ctf.safeBatchTransferFrom(
-            msg.sender, address(this), positionIds, Helpers.values(2, _amount), ""
-        );
+        ctf.safeBatchTransferFrom(msg.sender, address(this), positionIds, Helpers.values(2, _amount), "");
         ctf.mergePositions(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
         wcol.unwrap(msg.sender, _amount);
 
@@ -192,30 +168,49 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256 questionCount = md.questionCount();
         uint256 feeBips = md.feeBips();
 
+        if (md.oracle() == address(0)) revert MarketNotPrepared();
+        if (questionCount <= 1) revert NoConvertiblePositions();
         if (_indexSet == 0) revert InvalidIndexSet();
         if ((_indexSet >> questionCount) > 0) revert InvalidIndexSet();
 
         // if _amount is 0, return early
-        if (_amount == 0) return ();
+        if (_amount == 0) {
+            emit PositionsConverted(msg.sender, _marketId, _indexSet, _amount);
+            return;
+        }
 
-        uint256[] memory yesPositionIds;
-        uint256[] memory noPositionIds;
+        uint256 index = 0;
+        uint256 noPositionCount;
 
-        wcol.mint(questionCount * _amount);
+        // count number of noPositions
+        while (index < questionCount) {
+            unchecked {
+                if ((_indexSet & (1 << index)) > 0) {
+                    ++noPositionCount;
+                }
+                ++index;
+            }
+        }
 
+        uint256 yesPositionCount = questionCount - noPositionCount;
+        uint256[] memory noPositionIds = new uint256[](noPositionCount);
+        uint256[] memory yesPositionIds = new uint256[](yesPositionCount);
+
+        // mint the amount of wcol required
+        wcol.mint(yesPositionCount * _amount);
+
+        // populate noPositionIds and yesPositionIds
+        // split yes positions
         {
-            uint256[] memory positionIds = new uint256[](questionCount + 1);
-
-            uint256 index;
             uint256 noIndex;
-            uint256 yesIndex = questionCount;
-
+            uint256 yesIndex;
+            index = 0;
             while (index < questionCount) {
                 bytes32 questionId = NegRiskIdLib.getQuestionId(_marketId, uint8(index));
 
                 if ((_indexSet & (1 << index)) > 0) {
                     // NO
-                    positionIds[noIndex] = getPositionId(questionId, false);
+                    noPositionIds[noIndex] = getPositionId(questionId, false);
 
                     unchecked {
                         ++noIndex;
@@ -223,37 +218,22 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                 } else {
                     // YES
                     _splitPosition(getConditionId(questionId), _amount);
-                    positionIds[yesIndex] = getPositionId(questionId, true);
+                    yesPositionIds[yesIndex] = getPositionId(questionId, true);
 
                     unchecked {
-                        --yesIndex;
+                        ++yesIndex;
                     }
                 }
                 unchecked {
                     ++index;
                 }
             }
-
-            uint256 yesPositionsLength = questionCount - noIndex;
-
-            assembly {
-                noPositionIds := positionIds
-                mstore(noPositionIds, noIndex)
-
-                yesPositionIds := add(positionIds, mul(add(noIndex, 1), 0x20))
-                mstore(yesPositionIds, yesPositionsLength)
-            }
         }
 
-        wcol.burn(noPositionIds.length * _amount);
-
+        // transfer accumulated no tokens to the burn address
         {
             ctf.safeBatchTransferFrom(
-                msg.sender,
-                noTokenBurnAddress,
-                noPositionIds,
-                Helpers.values(noPositionIds.length, _amount),
-                ""
+                msg.sender, noTokenBurnAddress, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
             );
         }
 
@@ -263,19 +243,11 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         // transfer yes tokens to sender
         if (yesPositionIds.length > 0) {
             ctf.safeBatchTransferFrom(
-                address(this),
-                msg.sender,
-                yesPositionIds,
-                Helpers.values(yesPositionIds.length, amountOut),
-                ""
+                address(this), msg.sender, yesPositionIds, Helpers.values(yesPositionIds.length, amountOut), ""
             );
 
             ctf.safeBatchTransferFrom(
-                address(this),
-                vault,
-                yesPositionIds,
-                Helpers.values(yesPositionIds.length, feeAmount),
-                ""
+                address(this), vault, yesPositionIds, Helpers.values(yesPositionIds.length, feeAmount), ""
             );
         }
 

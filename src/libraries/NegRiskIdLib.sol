@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.15;
 
 /// @title NegRiskIdLib
 /// @author Mike Shrieve (mike@polymarket.com)
@@ -14,11 +14,7 @@ library NegRiskIdLib {
         return _questionId & MASK;
     }
 
-    function getQuestionId(bytes32 _marketId, uint8 _outcomeIndex)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function getQuestionId(bytes32 _marketId, uint8 _outcomeIndex) internal pure returns (bytes32) {
         unchecked {
             return bytes32(uint256(_marketId) + _outcomeIndex);
         }

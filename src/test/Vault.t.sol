@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.15;
 
 import {TestHelper, console} from "src/dev/TestHelper.sol";
 import {Vault} from "src/Vault.sol";
@@ -48,9 +48,7 @@ contract VaultTest is TestHelper {
         assertEq(usdc.balanceOf(brian), l - m);
     }
 
-    function test_transferConditionalTokens(uint64 _a, uint64 _b, uint64 _c, bytes32 _questionId)
-        public
-    {
+    function test_transferConditionalTokens(uint64 _a, uint64 _b, uint64 _c, bytes32 _questionId) public {
         uint256 s = uint256(_a);
         uint256 m = s + uint256(_b);
         uint256 l = m + uint256(_c);

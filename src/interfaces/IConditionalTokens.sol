@@ -5,20 +5,10 @@ pragma solidity ^0.8.15;
 
 /// @notice Interface for Gnosis Conditional Tokens
 interface IERC1155 {
-    event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 id,
-        uint256 value
-    );
+    event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
 
     event TransferBatch(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256[] ids,
-        uint256[] values
+        address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values
     );
 
     event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
@@ -27,22 +17,13 @@ interface IERC1155 {
 
     function balanceOf(address owner, uint256 id) external view returns (uint256);
 
-    function balanceOfBatch(address[] memory owners, uint256[] memory ids)
-        external
-        view
-        returns (uint256[] memory);
+    function balanceOfBatch(address[] memory owners, uint256[] memory ids) external view returns (uint256[] memory);
 
     function setApprovalForAll(address operator, bool approved) external;
 
     function isApprovedForAll(address owner, address operator) external view returns (bool);
 
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
-    ) external;
+    function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes calldata data) external;
 
     function safeBatchTransferFrom(
         address from,
@@ -55,10 +36,7 @@ interface IERC1155 {
 
 interface IConditionalTokensEE {
     event ConditionPreparation(
-        bytes32 indexed conditionId,
-        address indexed oracle,
-        bytes32 indexed questionId,
-        uint256 outcomeSlotCount
+        bytes32 indexed conditionId, address indexed oracle, bytes32 indexed questionId, uint256 outcomeSlotCount
     );
 
     event ConditionResolution(
@@ -108,8 +86,7 @@ interface IConditionalTokens is IConditionalTokensEE, IERC1155 {
     /// @param questionId An identifier for the question to be answered by the oracle.
     /// @param outcomeSlotCount The number of outcome slots which should be used for this condition.
     /// Must not exceed 256.
-    function prepareCondition(address oracle, bytes32 questionId, uint256 outcomeSlotCount)
-        external;
+    function prepareCondition(address oracle, bytes32 questionId, uint256 outcomeSlotCount) external;
 
     /// @dev Called by the oracle for reporting results of conditions. Will set the payout vector
     /// for the condition with the ID ``keccak256(abi.encodePacked(oracle, questionId,
@@ -192,8 +169,5 @@ interface IConditionalTokens is IConditionalTokensEE, IERC1155 {
     /// are used as the ERC-1155 ID for this contract.
     /// @param collateralToken Collateral token which backs the position.
     /// @param collectionId ID of the outcome collection associated with this position.
-    function getPositionId(address collateralToken, bytes32 collectionId)
-        external
-        pure
-        returns (uint256);
+    function getPositionId(address collateralToken, bytes32 collectionId) external pure returns (uint256);
 }

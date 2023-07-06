@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.19;
 
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
 
@@ -24,19 +24,14 @@ contract Vault is Auth, ERC1155TokenReceiver {
                                 ERC1155
     //////////////////////////////////////////////////////////////*/
 
-    function transferERC1155(address _erc1155, address _to, uint256 _id, uint256 _value)
-        external
-        onlyAdmin
-    {
+    function transferERC1155(address _erc1155, address _to, uint256 _id, uint256 _value) external onlyAdmin {
         IERC1155(_erc1155).safeTransferFrom(address(this), _to, _id, _value, "");
     }
 
-    function batchTransferERC1155(
-        address _erc1155,
-        address _to,
-        uint256[] calldata _ids,
-        uint256[] calldata _values
-    ) external onlyAdmin {
+    function batchTransferERC1155(address _erc1155, address _to, uint256[] calldata _ids, uint256[] calldata _values)
+        external
+        onlyAdmin
+    {
         IERC1155(_erc1155).safeBatchTransferFrom(address(this), _to, _ids, _values, "");
     }
 }

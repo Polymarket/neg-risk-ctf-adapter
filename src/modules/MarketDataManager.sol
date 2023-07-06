@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.15;
 
 import {MarketData, MarketDataLib} from "src/types/MarketData.sol";
 import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
@@ -48,10 +48,7 @@ abstract contract MarketStateManager is IMarketStateManagerEE {
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    function _prepareMarket(uint256 _feeBips, bytes memory _data)
-        internal
-        returns (bytes32 marketId)
-    {
+    function _prepareMarket(uint256 _feeBips, bytes memory _data) internal returns (bytes32 marketId) {
         address oracle = msg.sender;
         marketId = NegRiskIdLib.getMarketId(oracle, _data);
         MarketData md = marketData[marketId];
@@ -62,10 +59,7 @@ abstract contract MarketStateManager is IMarketStateManagerEE {
         marketData[marketId] = MarketDataLib.initialize(oracle, _feeBips);
     }
 
-    function _prepareQuestion(bytes32 _marketId)
-        internal
-        returns (bytes32 questionId, uint256 index)
-    {
+    function _prepareQuestion(bytes32 _marketId) internal returns (bytes32 questionId, uint256 index) {
         MarketData md = marketData[_marketId];
         address oracle = marketData[_marketId].oracle();
 
