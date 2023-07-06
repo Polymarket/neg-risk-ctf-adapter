@@ -220,7 +220,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         }
 
         nrAdapter.reportOutcome(_questionId, _result);
-        emit QuestionEmergencyResolved(_questionId, result);
+        emit QuestionEmergencyResolved(_questionId, _result);
     }
 
     /*//////////////////////////////////////////////////////////////

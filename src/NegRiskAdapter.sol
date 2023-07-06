@@ -32,11 +32,11 @@ interface INegRiskAdapterEE is IMarketStateManagerEE {
 }
 
 /// @title NegRiskAdapter
-/// @author Mike Shrieve (mike@polymarket.com)
 /// @notice Adapter for the CTF enabling the linking of a set binary markets where only one can resolve true
 /// @notice The adapter prevents more than one question in the same multi-outcome market from resolving true
 /// @notice And the adapter allows for the conversion of a set of no positions, to collateral plus the set of
 /// complementary yes positions
+/// @author Mike Shrieve (mike@polymarket.com)
 contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE {
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -108,9 +108,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @notice Splits collateral to a complete set of conditional tokens for a single question
     /// @notice This function signature is the same as the CTF's splitPosition
     /// @param _collateralToken - the collateral token, must be the same as the adapter's collateral token
-    /// @param _parentCollectionId - unused
     /// @param _conditionId - the conditionId for the question
-    /// @param _partition - unused
     /// @param _amount - the amount of collateral to split
     function splitPosition(address _collateralToken, bytes32, bytes32 _conditionId, uint256[] calldata, uint256 _amount)
         external
@@ -140,9 +138,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @notice Merges a complete set of conditional tokens for a single question to collateral
     /// @notice This function signature is the same as the CTF's mergePositions
     /// @param _collateralToken - the collateral token, must be the same as the adapter's collateral token
-    /// @param _parentCollectionId - unused
     /// @param _conditionId - the conditionId for the question
-    /// @param _partition - unused
     /// @param _amount - the amount of collateral to merge
     function mergePositions(
         address _collateralToken,
@@ -258,8 +254,9 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                     }
                 } else {
                     // YES
-                    _splitPosition(getConditionId(questionId), _amount);
                     yesPositionIds[yesIndex] = getPositionId(questionId, true);
+
+                    _splitPosition(getConditionId(questionId), _amount);
 
                     unchecked {
                         ++yesIndex;
