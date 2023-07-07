@@ -13,6 +13,9 @@ interface IMarketStateManagerEE {
     error FeeBipsOutOfBounds();
 }
 
+/// @title MarketStateManager
+/// @notice Manages market state on behalf of the NegRiskAdapter
+/// @author Mike Shrieve(mike@polymarket.com)
 abstract contract MarketStateManager is IMarketStateManagerEE {
     mapping(bytes32 _marketId => MarketData) internal marketData;
 
@@ -48,9 +51,14 @@ abstract contract MarketStateManager is IMarketStateManagerEE {
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    function _prepareMarket(uint256 _feeBips, bytes memory _data) internal returns (bytes32 marketId) {
+    /// @notice Prepares market data
+    /// @notice The market id depends on the oracle address, feeBips, and market metadata
+    /// @param _feeBips  - feeBips out of 1_00_00
+    /// @param _metadata - market metadata
+    /// @return marketId - the market id
+    function _prepareMarket(uint256 _feeBips, bytes memory _metadata) internal returns (bytes32 marketId) {
         address oracle = msg.sender;
-        marketId = NegRiskIdLib.getMarketId(oracle, _feeBips, _data);
+        marketId = NegRiskIdLib.getMarketId(oracle, _feeBips, _metadata);
         MarketData md = marketData[marketId];
 
         if (md.oracle() != address(0)) revert MarketAlreadyPrepared();
@@ -59,6 +67,10 @@ abstract contract MarketStateManager is IMarketStateManagerEE {
         marketData[marketId] = MarketDataLib.initialize(oracle, _feeBips);
     }
 
+    /// @notice Prepares a new question for the given market
+    /// @param _marketId   - the market for which to prepare a new question
+    /// @return questionId - the resulting question id
+    /// @return index      - the resulting question index
     function _prepareQuestion(bytes32 _marketId) internal returns (bytes32 questionId, uint256 index) {
         MarketData md = marketData[_marketId];
         address oracle = marketData[_marketId].oracle();
@@ -71,12 +83,15 @@ abstract contract MarketStateManager is IMarketStateManagerEE {
         marketData[_marketId] = md.incrementQuestionCount();
     }
 
-    function _reportOutcome(bytes32 _questionId, bool _outcome)
-        internal
-        returns (bytes32 marketId, uint256 questionIndex)
-    {
-        marketId = NegRiskIdLib.getMarketId(_questionId);
-        questionIndex = NegRiskIdLib.getQuestionIndex(_questionId);
+    /// @notice Reports the outcome of a question
+    /// @notice State is only modified if the outcome is true
+    /// @notice Reverts if the market is not prepared
+    /// @notice Reverts if msg.sender is not the market's oracle
+    /// @notice Reverts if the question index is out of bounds
+    /// @notice Reverts if the outcome is true, and the market has already been determined
+    function _reportOutcome(bytes32 _questionId, bool _outcome) internal {
+        bytes32 marketId = NegRiskIdLib.getMarketId(_questionId);
+        uint256 questionIndex = NegRiskIdLib.getQuestionIndex(_questionId);
 
         MarketData data = marketData[marketId];
         address oracle = data.oracle();

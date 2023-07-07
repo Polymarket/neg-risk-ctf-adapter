@@ -175,7 +175,6 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
         uint256 questionCountMax = 32;
         uint256 questionCount = bound(_a, 2, questionCountMax); // between 2 and 16 questions
         uint256 indexSet = bound(_b, 1, (2 ** questionCount) - 1);
-        uint256 noPositionsCount;
 
         _before(questionCount, 0, indexSet, amount);
 
@@ -196,7 +195,7 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
 
     function test_revert_convertPositions_noConvertiblePositions() public {
         vm.prank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(0, "");
+        marketId = nrAdapter.prepareMarket(0, "");
 
         // 0 questions prepared
         vm.expectRevert(NoConvertiblePositions.selector);

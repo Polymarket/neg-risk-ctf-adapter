@@ -196,13 +196,12 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// (# of no positions - 1)
     /// @notice If the market has a fee, the fee is taken from both collateral and the yes positions
     /// @param _marketId - the marketId
-    /// @param _indexSet - the set of positions to convert, expressed as an index set where the lsb is the first
-    /// question
+    /// @param _indexSet - the set of positions to convert, expressed as an index set where the least significant bit is
+    /// the first question (index zero)
     /// @param _amount   - the amount of tokens to convert
     function convertPositions(bytes32 _marketId, uint256 _indexSet, uint256 _amount) external {
         MarketData md = getMarketData(_marketId);
         uint256 questionCount = md.questionCount();
-        uint256 feeBips = md.feeBips();
 
         if (md.oracle() == address(0)) revert MarketNotPrepared();
         if (questionCount <= 1) revert NoConvertiblePositions();
@@ -241,6 +240,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
             uint256 noIndex;
             uint256 yesIndex;
             index = 0;
+
             while (index < questionCount) {
                 bytes32 questionId = NegRiskIdLib.getQuestionId(_marketId, uint8(index));
 
@@ -255,6 +255,8 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                     // YES
                     yesPositionIds[yesIndex] = getPositionId(questionId, true);
 
+                    // split position to get yes and no tokens
+                    // the no tokens will be discarded
                     _splitPosition(getConditionId(questionId), _amount);
 
                     unchecked {
@@ -268,6 +270,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         }
 
         // transfer accumulated no tokens to the burn address
+        // these must never be redeemed
         {
             ctf.safeBatchTransferFrom(
                 msg.sender, noTokenBurnAddress, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
@@ -277,21 +280,30 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256 feeAmount = (_amount * md.feeBips()) / 1_00_00;
         uint256 amountOut = _amount - feeAmount;
 
-        // transfer yes tokens to sender
+        if (noPositionIds.length > 1) {
+            // collateral out is always proportional to the number of no positions minus 1
+            uint256 multiplier = noPositionIds.length - 1;
+            // transfer collateral fees to vault
+            if (feeAmount > 0) {
+                wcol.release(vault, multiplier * feeAmount);
+            }
+            // transfer collateral to sender
+            wcol.release(msg.sender, multiplier * amountOut);
+        }
+
         if (yesPositionIds.length > 0) {
+            if (feeAmount > 0) {
+                // transfer yes token fees to vault
+                ctf.safeBatchTransferFrom(
+                    address(this), vault, yesPositionIds, Helpers.values(yesPositionIds.length, feeAmount), ""
+                );
+            }
+
+            // transfer yes tokens to sender
             ctf.safeBatchTransferFrom(
                 address(this), msg.sender, yesPositionIds, Helpers.values(yesPositionIds.length, amountOut), ""
             );
-
-            ctf.safeBatchTransferFrom(
-                address(this), vault, yesPositionIds, Helpers.values(yesPositionIds.length, feeAmount), ""
-            );
         }
-
-        uint256 multiplier = noPositionIds.length - 1;
-
-        wcol.release(msg.sender, multiplier * amountOut);
-        wcol.release(vault, multiplier * feeAmount);
 
         emit PositionsConverted(msg.sender, _marketId, _indexSet, _amount);
     }
@@ -302,11 +314,12 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
     /// @notice Prepare a multi-outcome market
     /// @param _feeBips  - the fee for the market, out of 1_00_00
-    /// @param _data     - metadata for the market
+    /// @param _metadata     - metadata for the market
     /// @return marketId - the marketId
-    function prepareMarket(uint256 _feeBips, bytes calldata _data) external returns (bytes32) {
-        bytes32 marketId = _prepareMarket(_feeBips, _data);
-        emit MarketPrepared(marketId, msg.sender, _feeBips, _data);
+    function prepareMarket(uint256 _feeBips, bytes calldata _metadata) external returns (bytes32) {
+        bytes32 marketId = _prepareMarket(_feeBips, _metadata);
+
+        emit MarketPrepared(marketId, msg.sender, _feeBips, _metadata);
 
         return marketId;
     }
@@ -315,12 +328,16 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                             PREPARE QUESTION
     //////////////////////////////////////////////////////////////*/
 
-    function prepareQuestion(bytes32 _marketId, bytes calldata _data) external returns (bytes32) {
+    /// @notice Prepare a question for a given market
+    /// @param _marketId   - the id of the market for which to prepare the question
+    /// @param _metadata   - the question metadata
+    /// @return questionId - the id of the resulting question
+    function prepareQuestion(bytes32 _marketId, bytes calldata _metadata) external returns (bytes32) {
         (bytes32 questionId, uint256 questionIndex) = _prepareQuestion(_marketId);
 
         ctf.prepareCondition(address(this), questionId, 2);
 
-        emit QuestionPrepared(_marketId, questionId, questionIndex, _data);
+        emit QuestionPrepared(_marketId, questionId, questionIndex, _metadata);
 
         return questionId;
     }
@@ -333,18 +350,18 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @param _questionId - the questionId to report
     /// @param _outcome    - the outcome of the question
     function reportOutcome(bytes32 _questionId, bool _outcome) external {
-        (bytes32 marketId, uint256 questionIndex) = _reportOutcome(_questionId, _outcome);
+        _reportOutcome(_questionId, _outcome);
 
         ctf.reportPayouts(_questionId, Helpers.payouts(_outcome));
 
-        emit OutcomeReported(marketId, _questionId, _outcome);
+        emit OutcomeReported(NegRiskIdLib.getMarketId(_questionId), _questionId, _outcome);
     }
 
     /*//////////////////////////////////////////////////////////////
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    // to-do: just this one internal function ?
+    /// @dev internal function to avoid stack to deep in convertPositions
     function _splitPosition(bytes32 _conditionId, uint256 _amount) internal {
         ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
     }

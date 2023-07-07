@@ -8,11 +8,11 @@ contract CollateralWhitelist is IAddressWhitelist {
 
     function removeFromWhitelist(address) external {}
 
-    function isOnWhitelist(address) external view returns (bool) {
+    function isOnWhitelist(address) external pure returns (bool) {
         return true;
     }
 
-    function getWhitelist() external view returns (address[] memory) {
+    function getWhitelist() external pure returns (address[] memory) {
         return new address[](0);
     }
 }
