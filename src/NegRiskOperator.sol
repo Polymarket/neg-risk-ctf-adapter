@@ -11,15 +11,15 @@ interface INegRiskOperatorEE {
     error OnlyOracle();
     error OracleAlreadyInitialized();
     error OnlyNegRiskAdapter();
-    error InvalidPayouts(uint256[] payouts);
+    error InvalidPayouts();
     error OnlyFlagged();
     error OnlyNotFlagged();
     error NotEligibleForEmergencyResolution();
     error DelayPeriodNotOver();
     error ResultNotAvailable();
-    error QuestionWithRequestIdAlreadyPrepared(bytes32 requestId);
-    error InvalidRequestId(bytes32 requestId);
-    error QuestionAlreadyReported(bytes32 questionId);
+    error QuestionWithRequestIdAlreadyPrepared();
+    error InvalidRequestId();
+    error QuestionAlreadyReported();
 
     event MarketPrepared(bytes32 indexed marketId, uint256 feeBips, bytes data);
     event QuestionPrepared(
@@ -115,7 +115,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         returns (bytes32)
     {
         if (questionIds[_requestId] != bytes32(0)) {
-            revert QuestionWithRequestIdAlreadyPrepared(_requestId);
+            revert QuestionWithRequestIdAlreadyPrepared();
         }
 
         bytes32 questionId = nrAdapter.prepareQuestion(_marketId, _data);
@@ -138,24 +138,24 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     /// @param _payouts - the payouts to be reported, [1,0] if true, [0,1] if false, any other payouts are invalid
     function reportPayouts(bytes32 _requestId, uint256[] calldata _payouts) external onlyOracle {
         if (_payouts.length != 2) {
-            revert InvalidPayouts(_payouts);
+            revert InvalidPayouts();
         }
 
         uint256 payout0 = _payouts[0];
         uint256 payout1 = _payouts[1];
 
-        if (payout0 * payout1 != 0) {
-            revert InvalidPayouts(_payouts);
+        if (payout0 * payout1 > 0 || payout0 + payout1 == 0) {
+            revert InvalidPayouts();
         }
 
         bytes32 questionId = questionIds[_requestId];
 
         if (questionId == bytes32(0)) {
-            revert InvalidRequestId(_requestId);
+            revert InvalidRequestId();
         }
 
         if (reportedAt[questionId] > 0) {
-            revert QuestionAlreadyReported(questionId);
+            revert QuestionAlreadyReported();
         }
 
         bool result = payout0 == 1 ? true : false;

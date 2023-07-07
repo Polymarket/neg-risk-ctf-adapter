@@ -195,7 +195,7 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
         nrAdapter.convertPositions(_marketId, 0, 0);
     }
 
-    function test_revert_convertPositions_noConvertiblePositions(bytes32 _marketId) public {
+    function test_revert_convertPositions_noConvertiblePositions() public {
         vm.prank(oracle);
         bytes32 marketId = nrAdapter.prepareMarket(0, "");
 

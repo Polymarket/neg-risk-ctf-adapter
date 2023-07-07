@@ -14,9 +14,9 @@ library NegRiskIdLib {
         return _questionId & MASK;
     }
 
-    function getQuestionId(bytes32 _marketId, uint8 _outcomeIndex) internal pure returns (bytes32) {
+    function getQuestionId(bytes32 _marketId, uint8 _questionIndex) internal pure returns (bytes32) {
         unchecked {
-            return bytes32(uint256(_marketId) + _outcomeIndex);
+            return bytes32(uint256(_marketId) + _questionIndex);
         }
     }
 
