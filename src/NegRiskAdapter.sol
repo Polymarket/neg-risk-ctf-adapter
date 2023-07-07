@@ -49,7 +49,6 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
     address public constant noTokenBurnAddress = address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
     uint256 public constant feeDenominator = 1_00_00;
-    bytes32 private constant MASK = bytes32(type(uint256).max) << 8;
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
