@@ -7,14 +7,16 @@ import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 contract NegRiskAdapter_PrepareQuestion_Test is NegRiskAdapter_SetUp {
     function test_prepareQuestion() public {
         uint256 feeBips = 0;
-        bytes memory data = new bytes(0);
 
         vm.startPrank(oracle);
-        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, "market");
 
         uint8 i = 0;
 
         while (i < 255) {
+            bytes memory data = abi.encodePacked("question", i);
+            vm.expectEmit();
+            emit QuestionPrepared(marketId, NegRiskIdLib.getQuestionId(marketId, i), i, data);
             nrAdapter.prepareQuestion(marketId, data);
             assertEq(NegRiskIdLib.getQuestionId(marketId, i), bytes32(uint256(marketId) + i));
             assertEq(nrAdapter.getQuestionCount(marketId), i + 1);
@@ -22,7 +24,7 @@ contract NegRiskAdapter_PrepareQuestion_Test is NegRiskAdapter_SetUp {
         }
     }
 
-    function test_revert_prepareQuestionNotOracle() public {
+    function test_revert_prepareQuestion_onlyOracle() public {
         uint256 feeBips = 0;
         bytes memory data = new bytes(0);
 
@@ -32,5 +34,13 @@ contract NegRiskAdapter_PrepareQuestion_Test is NegRiskAdapter_SetUp {
         vm.startPrank(alice);
         vm.expectRevert(OnlyOracle.selector);
         nrAdapter.prepareQuestion(marketId, data);
+    }
+
+    function test_revert_prepareQuestion_marketNotPrepared(bytes32 _marketId) public {
+        bytes memory data = bytes("question");
+
+        vm.expectRevert(MarketNotPrepared.selector);
+        vm.prank(oracle);
+        nrAdapter.prepareQuestion(_marketId, data);
     }
 }

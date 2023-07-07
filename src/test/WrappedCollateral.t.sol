@@ -2,6 +2,7 @@
 pragma solidity ^0.8.15;
 
 import {TestHelper} from "src/dev/TestHelper.sol";
+
 import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {DeployLib} from "src/dev/libraries/DeployLib.sol";
@@ -24,7 +25,7 @@ contract WrappedCollateralTest is TestHelper {
 
     function test_initialization() public {
         assertEq(wcol.name(), "Wrapped Collateral");
-        assertEq(wcol.symbol(), "WC");
+        assertEq(wcol.symbol(), "WCOL");
         assertEq(wcol.decimals(), usdc.decimals());
         assertEq(wcol.underlying(), address(usdc));
         assertEq(wcol.owner(), owner);

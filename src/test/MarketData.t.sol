@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.15;
 
 import {TestHelper, console} from "src/dev/TestHelper.sol";
 import {MarketData, MarketDataLib} from "src/types/MarketData.sol";
@@ -51,12 +51,7 @@ contract MarketDataTest is TestHelper {
         }
     }
 
-    function test_integration(
-        address _oracle,
-        uint256 _feeBips,
-        uint8 _result,
-        uint8 _questionCount
-    ) public {
+    function test_integration(address _oracle, uint256 _feeBips, uint8 _result, uint8 _questionCount) public {
         vm.assume(_questionCount < 255);
 
         uint256 feeBips = bound(_feeBips, 0, 10_000);

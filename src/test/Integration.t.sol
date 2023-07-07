@@ -44,8 +44,7 @@ contract IntegrationTest is TestHelper {
         vm.prank(admin);
         nrOperator = new NegRiskOperator(address(nrAdapter));
 
-        umaCtfAdapter =
-            IUmaCtfAdapter(DeployLib.deployUmaCtfAdapter(address(nrOperator), address(finder)));
+        umaCtfAdapter = IUmaCtfAdapter(DeployLib.deployUmaCtfAdapter(address(nrOperator), address(finder)));
 
         vm.prank(admin);
         nrOperator.setOracle(address(umaCtfAdapter));
@@ -61,8 +60,7 @@ contract IntegrationTest is TestHelper {
         vm.startPrank(brian);
         usdc.mint(brian, reward);
         usdc.approve(address(umaCtfAdapter), reward);
-        bytes32 requestId =
-            umaCtfAdapter.initialize(ancillaryData, rewardToken, reward, proposalBond, liveness);
+        bytes32 requestId = umaCtfAdapter.initialize(ancillaryData, rewardToken, reward, proposalBond, liveness);
 
         assertNotEq(requestId, bytes32(0));
     }
@@ -82,8 +80,7 @@ contract IntegrationTest is TestHelper {
         vm.startPrank(brian);
         usdc.mint(brian, reward);
         usdc.approve(address(umaCtfAdapter), reward);
-        bytes32 requestId =
-            umaCtfAdapter.initialize(data, rewardToken, reward, proposalBond, liveness);
+        bytes32 requestId = umaCtfAdapter.initialize(data, rewardToken, reward, proposalBond, liveness);
 
         vm.stopPrank();
 
@@ -106,8 +103,7 @@ contract IntegrationTest is TestHelper {
         vm.startPrank(brian);
         usdc.mint(brian, reward);
         usdc.approve(address(umaCtfAdapter), reward);
-        bytes32 requestId =
-            umaCtfAdapter.initialize(data, rewardToken, reward, proposalBond, liveness);
+        bytes32 requestId = umaCtfAdapter.initialize(data, rewardToken, reward, proposalBond, liveness);
 
         vm.stopPrank();
 

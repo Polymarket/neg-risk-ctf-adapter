@@ -23,26 +23,31 @@ contract NegRiskAdapter_ReportOutcome_Test is NegRiskAdapter_SetUp {
             nrAdapter.prepareQuestion(marketId, data);
             ++i;
         }
+        vm.stopPrank();
     }
 
-    function test_reportOutcomeFalse(uint8 _questionIndex) public {
+    function test_reportOutcome(uint8 _questionIndex, bool _result) public {
         _questionIndex %= QUESTION_COUNT;
         bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, uint8(_questionIndex));
 
         // REPORT OUTCOME
-        nrAdapter.reportOutcome(questionId, false);
+        vm.prank(oracle);
+        nrAdapter.reportOutcome(questionId, _result);
 
         bytes32 conditionId = nrAdapter.getConditionId(questionId);
         assertEq(ctf.payoutDenominator(conditionId), 1);
 
         // payouts are [0,1]
-        assertEq(ctf.payoutNumerators(conditionId, 0), 0);
-        assertEq(ctf.payoutNumerators(conditionId, 1), 1);
+        assertEq(ctf.payoutNumerators(conditionId, 0), _result ? 1 : 0);
+        assertEq(ctf.payoutNumerators(conditionId, 1), _result ? 0 : 1);
 
-        // the market is not determined
-        // these are the initial values
-        assertEq(nrAdapter.getDetermined(marketId), false);
-        assertEq(nrAdapter.getResult(marketId), 0);
+        if (_result == true) {
+            assertEq(nrAdapter.getDetermined(marketId), true);
+            assertEq(nrAdapter.getResult(marketId), _questionIndex);
+        } else {
+            assertEq(nrAdapter.getDetermined(marketId), false);
+            assertEq(nrAdapter.getResult(marketId), 0);
+        }
     }
 
     function test_reportOutcomeTrue(uint8 _questionIndex) public {
@@ -50,6 +55,7 @@ contract NegRiskAdapter_ReportOutcome_Test is NegRiskAdapter_SetUp {
         bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, uint8(_questionIndex));
 
         // REPORT OUTCOME
+        vm.prank(oracle);
         nrAdapter.reportOutcome(questionId, true);
 
         bytes32 conditionId = nrAdapter.getConditionId(questionId);
@@ -64,10 +70,7 @@ contract NegRiskAdapter_ReportOutcome_Test is NegRiskAdapter_SetUp {
         assertEq(nrAdapter.getResult(marketId), _questionIndex);
     }
 
-    function test_revert_reportOutcomeTrueWhenAlreadyDetermined(
-        uint8 _questionIndex1,
-        uint8 _questionIndex2
-    ) public {
+    function test_revert_reportOutcome_marketAlreadyDetermined(uint8 _questionIndex1, uint8 _questionIndex2) public {
         _questionIndex1 %= QUESTION_COUNT;
         _questionIndex2 %= QUESTION_COUNT;
 
@@ -77,10 +80,35 @@ contract NegRiskAdapter_ReportOutcome_Test is NegRiskAdapter_SetUp {
         bytes32 questionId2 = NegRiskIdLib.getQuestionId(marketId, _questionIndex2);
 
         // REPORT FIRST TRUE OUTCOME
+        vm.prank(oracle);
         nrAdapter.reportOutcome(questionId1, true);
 
         // REPORT SECOND TRUE OUTCOME
         vm.expectRevert(MarketAlreadyDetermined.selector);
+        vm.prank(oracle);
         nrAdapter.reportOutcome(questionId2, true);
+    }
+
+    function test_revert_reportOutcome_marketNotPrepared(bytes32 _questionId, bool _result) public {
+        // REPORT OUTCOME
+        vm.expectRevert(MarketNotPrepared.selector);
+        nrAdapter.reportOutcome(_questionId, _result);
+    }
+
+    function test_revert_reportOutcome_onlyOracle(uint8 _questionIndex, bool _result) public {
+        _questionIndex %= QUESTION_COUNT;
+        bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, uint8(_questionIndex));
+
+        vm.expectRevert(OnlyOracle.selector);
+        nrAdapter.reportOutcome(questionId, _result);
+    }
+
+    function test_revert_reportOutcome_indexOutOfBounds(uint256 _questionIndex, bool _result) public {
+        _questionIndex = bound(_questionIndex, QUESTION_COUNT, type(uint8).max);
+        bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, uint8(_questionIndex));
+
+        vm.expectRevert(IndexOutOfBounds.selector);
+        vm.prank(oracle);
+        nrAdapter.reportOutcome(questionId, _result);
     }
 }
