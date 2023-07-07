@@ -6,7 +6,6 @@ import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
     uint256 constant QUESTION_COUNT_MAX = 32;
-    uint256 constant FEE_BIPS_MAX = 1_00_00;
     bytes32 marketId;
 
     function _before(uint256 _questionCount, uint256 _feeBips, uint256 _indexSet, uint256 _amount) internal {

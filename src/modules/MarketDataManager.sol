@@ -50,7 +50,7 @@ abstract contract MarketStateManager is IMarketStateManagerEE {
 
     function _prepareMarket(uint256 _feeBips, bytes memory _data) internal returns (bytes32 marketId) {
         address oracle = msg.sender;
-        marketId = NegRiskIdLib.getMarketId(oracle, _data);
+        marketId = NegRiskIdLib.getMarketId(oracle, _feeBips, _data);
         MarketData md = marketData[marketId];
 
         if (md.oracle() != address(0)) revert MarketAlreadyPrepared();

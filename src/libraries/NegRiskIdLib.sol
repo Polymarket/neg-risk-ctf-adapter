@@ -6,8 +6,8 @@ pragma solidity ^0.8.15;
 library NegRiskIdLib {
     bytes32 private constant MASK = bytes32(type(uint256).max) << 8;
 
-    function getMarketId(address _oracle, bytes memory _data) internal pure returns (bytes32) {
-        return keccak256(abi.encode(_oracle, _data)) & MASK;
+    function getMarketId(address _oracle, uint256 _feeBips, bytes memory _data) internal pure returns (bytes32) {
+        return keccak256(abi.encode(_oracle, _feeBips, _data)) & MASK;
     }
 
     function getMarketId(bytes32 _questionId) internal pure returns (bytes32) {

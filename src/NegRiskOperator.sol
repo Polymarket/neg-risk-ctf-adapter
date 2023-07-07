@@ -3,11 +3,12 @@ pragma solidity 0.8.19;
 
 import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
 import {Auth} from "src/modules/Auth.sol";
+import {IAuthEE} from "src/modules/interfaces/IAuth.sol";
 import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 
 /// @title INegRiskOperatorEE
 /// @notice NegRiskOperator Errors and Events
-interface INegRiskOperatorEE {
+interface INegRiskOperatorEE is IAuthEE {
     error OnlyOracle();
     error OracleAlreadyInitialized();
     error OnlyNegRiskAdapter();

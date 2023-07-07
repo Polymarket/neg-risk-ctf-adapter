@@ -94,7 +94,7 @@ contract NegRiskAdapterInvariants is Test {
     }
 
     // this is only true if no conversions have been made
-    function invariant_badInvariantThisShouldFail() public {
+    function invariant_collateral() public {
         assertEq(usdc.balanceOf(address(wcol)), wcol.balanceOf(address(ctf)));
     }
 }

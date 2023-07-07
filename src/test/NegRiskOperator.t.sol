@@ -72,12 +72,12 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         _feeBips = bound(_feeBips, 0, 1_00_00);
 
         vm.expectEmit();
-        emit MarketPrepared(NegRiskIdLib.getMarketId(address(nrOperator), _data), _feeBips, _data);
+        emit MarketPrepared(NegRiskIdLib.getMarketId(address(nrOperator), _feeBips, _data), _feeBips, _data);
 
         vm.prank(alice);
         bytes32 marketId = nrOperator.prepareMarket(_feeBips, _data);
 
-        assertEq(marketId, NegRiskIdLib.getMarketId(address(nrOperator), _data));
+        assertEq(marketId, NegRiskIdLib.getMarketId(address(nrOperator), _feeBips, _data));
         assertEq(nrAdapter.getFeeBips(marketId), _feeBips);
         assertEq(nrAdapter.getOracle(marketId), address(nrOperator));
         assertEq(nrAdapter.getQuestionCount(marketId), 0);
@@ -111,7 +111,7 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         bytes32 marketId1 = nrOperator.prepareMarket(feeBips, "market1");
 
         vm.prank(alice);
-        bytes32 questionId = nrOperator.prepareQuestion(marketId1, "", _requestId);
+        nrOperator.prepareQuestion(marketId1, "", _requestId);
 
         vm.prank(alice);
         bytes32 marketId2 = nrOperator.prepareMarket(feeBips, "market2");
@@ -151,7 +151,7 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         bytes32 marketId = nrOperator.prepareMarket(0, "market");
 
         vm.prank(alice);
-        bytes32 questionId = nrOperator.prepareQuestion(marketId, "question", _requestId);
+        nrOperator.prepareQuestion(marketId, "question", _requestId);
 
         vm.expectRevert(InvalidPayouts.selector);
         vm.prank(oracle);
@@ -171,11 +171,37 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         bytes32 marketId = nrOperator.prepareMarket(0, "market");
 
         vm.prank(alice);
-        bytes32 questionId = nrOperator.prepareQuestion(marketId, "question", _requestId);
+        nrOperator.prepareQuestion(marketId, "question", _requestId);
 
         vm.expectRevert(InvalidPayouts.selector);
         vm.prank(oracle);
         nrOperator.reportPayouts(_requestId, payouts);
+    }
+
+    function test_revert_reportPayouts_invalidRequestId(bytes32 _requestId, bool _result) public {
+        uint256[] memory payouts = _result ? payoutsTrue : payoutsFalse;
+
+        vm.expectRevert(InvalidRequestId.selector);
+        vm.prank(oracle);
+        nrOperator.reportPayouts(_requestId, payouts);
+    }
+
+    function test_revert_reportPayouts_questionAlreadyReported(bytes32 _requestId, bool _result) public {
+        bytes memory data = new bytes(0);
+        uint256 feeBips = 0;
+
+        vm.prank(alice);
+        bytes32 marketId = nrOperator.prepareMarket(feeBips, data);
+
+        vm.prank(alice);
+        nrOperator.prepareQuestion(marketId, data, _requestId);
+
+        vm.prank(oracle);
+        nrOperator.reportPayouts(_requestId, _result ? payoutsTrue : payoutsFalse);
+
+        vm.expectRevert(QuestionAlreadyReported.selector);
+        vm.prank(oracle);
+        nrOperator.reportPayouts(_requestId, _result ? payoutsTrue : payoutsFalse);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -207,7 +233,7 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         assertEq(ctf.payoutNumerators(conditionId, 1), _result ? 0 : 1);
     }
 
-    function test_revert_resolveQuestion_resultNotAvailable(bytes32 _requestId, bool _result) public {
+    function test_revert_resolveQuestion_resultNotAvailable(bytes32 _requestId) public {
         bytes memory data = new bytes(0);
         uint256 feeBips = 0;
 
@@ -246,12 +272,35 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         nrOperator.resolveQuestion(questionId);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                             FLAG QUESTION
+    //////////////////////////////////////////////////////////////*/
+
     function test_flagQuestion(bytes32 _questionId) public {
         vm.prank(alice);
         nrOperator.flagQuestion(_questionId);
 
         assertEq(nrOperator.flaggedAt(_questionId), block.timestamp);
     }
+
+    function test_revert_flagQuestion_notAdmin(bytes32 _questionId) public {
+        vm.expectRevert(NotAdmin.selector);
+        vm.prank(brian);
+        nrOperator.flagQuestion(_questionId);
+    }
+
+    function test_revert_flagQuestion_onlyNotFlagged(bytes32 _questionId) public {
+        vm.prank(alice);
+        nrOperator.flagQuestion(_questionId);
+
+        vm.expectRevert(OnlyNotFlagged.selector);
+        vm.prank(alice);
+        nrOperator.flagQuestion(_questionId);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            UNFLAG QUESTION
+    //////////////////////////////////////////////////////////////*/
 
     function test_unflagQuestion(bytes32 _questionId) public {
         vm.prank(alice);
@@ -262,6 +311,22 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
 
         assertEq(nrOperator.flaggedAt(_questionId), 0);
     }
+
+    function test_revert_unflagQuestion_onlyFlagged(bytes32 _questionId) public {
+        vm.expectRevert(OnlyFlagged.selector);
+        vm.prank(alice);
+        nrOperator.unflagQuestion(_questionId);
+    }
+
+    function test_revert_unflagQuestion_onlyAdmin(bytes32 _questionId) public {
+        vm.expectRevert(NotAdmin.selector);
+        vm.prank(brian);
+        nrOperator.unflagQuestion(_questionId);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                       EMERGENCY RESOLVE QUESTION
+    //////////////////////////////////////////////////////////////*/
 
     function test_emergencyResolveQuestion(bytes32 _requestId, bool _result) public {
         bytes memory data = new bytes(0);
@@ -313,5 +378,13 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         vm.prank(alice);
         vm.expectRevert(DelayPeriodNotOver.selector);
         nrOperator.emergencyResolveQuestion(questionId, _result);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                FALLBACK
+    //////////////////////////////////////////////////////////////*/
+
+    function test_fallback(address _oracle, bytes32 _questionId, uint256 _outcomeSlotCount) public {
+        IConditionalTokens(address(nrOperator)).prepareCondition(_oracle, _questionId, _outcomeSlotCount);
     }
 }
