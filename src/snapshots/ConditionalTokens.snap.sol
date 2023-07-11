@@ -9,7 +9,7 @@ import {USDC} from "src/test/mock/USDC.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 
-contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
+contract ConditionalTokensSnapshots is TestHelper, GasSnapshot {
     USDC usdc;
     IConditionalTokens ctf;
     address oracle;

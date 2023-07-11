@@ -1,0 +1,44 @@
+{
+  "include": ["ts"],
+  "exclude": [
+    "test/*",
+    "lib/*",
+    "contracts/*",
+    "artifacts/*",
+    "node_modules",
+    "./node_modules",
+    "./node_modules/*"
+  ],
+  "compilerOptions": {
+    "baseUrl": "./",
+    "rootDir": "./ts",
+    "outDir": "./dist",
+
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "importHelpers": false,
+
+    "strict": true,
+    "useDefineForClassFields": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "useUnknownInCatchVariables": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strictNullChecks": true,
+
+    "module": "commonjs",
+    "target": "es2021",
+    "typeRoots": ["node_modules/@types"],
+    "lib": ["es2022", "dom"],
+
+    "skipLibCheck": true
+  }
+}

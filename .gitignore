@@ -15,3 +15,7 @@ docs/
 
 # python virtualenv
 env/
+
+lcov.info
+
+node_modules/
