@@ -1,49 +1,86 @@
-import { ALICE, BOB } from "./setup/constants";
-import { publicClient, walletClient } from "./setup/utils";
-import { umaCtfAdapterContract } from "../contracts/umaCtfAdapter";
-import { finderContract } from "../contracts/finder";
-import { type Address, type TransactionReceipt, isAddress, zeroAddress } from "viem";
+import { type Address, isAddress } from "viem";
 import { beforeAll, afterAll, expect, test } from "vitest";
 
+import { deployContract } from "ts/test/setup/utils/deployContract";
+
+import {
+  conditionalTokens,
+  mockCollateralWhitelist,
+  mockOptimisticOracleV2,
+  mockUSDC,
+  vault,
+  finder,
+  umaCtfAdapter,
+  negRiskAdapter,
+  negRiskOperator,
+} from "ts/contracts";
+
 let umaCtfAdapterAddress: Address;
-let ctfAddress: Address;
+let conditionalTokensAddress: Address;
 let finderAddress: Address;
-let receipt: TransactionReceipt;
+let optimisticOracleAddress: Address;
+let collateralWhitelistAddress: Address;
+let vaultAddress: Address;
+let usdcAddress: Address;
+let negRiskAdapterAddress: Address;
+let negRiskOperatorAddress: Address;
 
 beforeAll(async () => {
-  const finderHash = await walletClient.deployContract({
-    ...finderContract,
-    args: [zeroAddress, zeroAddress],
-    account: ALICE,
+  conditionalTokensAddress = await deployContract({
+    ...conditionalTokens,
+    args: [],
   });
 
-  const finderReceipt = await publicClient.waitForTransactionReceipt({
-    hash: finderHash,
+  optimisticOracleAddress = await deployContract({
+    ...mockOptimisticOracleV2,
+    args: [],
   });
 
-  // rome-ignore lint/style/noNonNullAssertion: this is guaranteed to be set.
-  const finderAddress = finderReceipt.contractAddress!;
-
-  const hash = await walletClient.deployContract({
-    ...umaCtfAdapterContract,
-    args: [zeroAddress, finderAddress],
-    // args: [ctfAddress, finderAddress],
-    // This account is already unlocked by anvil. If you were to use an account that is not unlocked, you'd
-    // have to impersonate it first using `testClient.impersonateAccount(<account>)`.
-    account: ALICE,
+  collateralWhitelistAddress = await deployContract({
+    ...mockCollateralWhitelist,
+    args: [],
   });
 
-  receipt = await publicClient.waitForTransactionReceipt({
-    hash,
+  finderAddress = await deployContract({
+    ...finder,
+    args: [optimisticOracleAddress, collateralWhitelistAddress],
   });
 
-  // rome-ignore lint/style/noNonNullAssertion: this is guaranteed to be set.
-  umaCtfAdapterAddress = receipt.contractAddress!;
+  vaultAddress = await deployContract({
+    ...vault,
+    args: [],
+  });
+
+  umaCtfAdapterAddress = await deployContract({
+    ...umaCtfAdapter,
+    args: [conditionalTokensAddress, finderAddress],
+  });
+
+  usdcAddress = await deployContract({
+    ...mockUSDC,
+    args: [],
+  });
+
+  negRiskAdapterAddress = await deployContract({
+    ...negRiskAdapter,
+    args: [conditionalTokensAddress, usdcAddress, vaultAddress],
+  });
+
+  negRiskOperatorAddress = await deployContract({
+    ...negRiskOperator,
+    args: [negRiskAdapterAddress],
+  });
 });
 
-test("can deploy the umaCtfAdapter contract", async () => {
-  expect(umaCtfAdapterAddress).toBeDefined();
+test("can deploy contracts", async () => {
+  expect(isAddress(optimisticOracleAddress)).toBe(true);
+  expect(isAddress(collateralWhitelistAddress)).toBe(true);
+  expect(isAddress(finderAddress)).toBe(true);
+  expect(isAddress(vaultAddress)).toBe(true);
   expect(isAddress(umaCtfAdapterAddress)).toBe(true);
+  expect(isAddress(usdcAddress)).toBe(true);
+  expect(isAddress(negRiskAdapterAddress)).toBe(true);
+  expect(isAddress(negRiskOperatorAddress)).toBe(true);
 });
 
 afterAll(async () => {
