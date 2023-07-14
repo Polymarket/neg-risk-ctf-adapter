@@ -13,7 +13,7 @@ import {
   umaCtfAdapter,
   negRiskAdapter,
   negRiskOperator,
-} from "ts/contracts";
+} from "../contracts/abi";
 
 let umaCtfAdapterAddress: Address;
 let conditionalTokensAddress: Address;

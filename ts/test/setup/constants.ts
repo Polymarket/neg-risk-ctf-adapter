@@ -13,7 +13,7 @@ export const ACCOUNTS = [
 ] as const;
 
 // Named accounts
-export const [ALICE, BOB] = ACCOUNTS;
+export const [ADMIN, ALICE, BRIAN] = ACCOUNTS;
 
 // if (!process.env.VITE_ANVIL_FORK_URL) {
 //   throw new Error('Missing environment variable "VITE_ANVIL_FORK_URL"');

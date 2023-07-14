@@ -10,7 +10,7 @@ import {
   umaCtfAdapter,
   negRiskAdapter,
   negRiskOperator,
-} from "ts/contracts";
+} from "../../../contracts/abi";
 
 const deployAll = async () => {
   const conditionalTokensContract = await deployAndGetContract({

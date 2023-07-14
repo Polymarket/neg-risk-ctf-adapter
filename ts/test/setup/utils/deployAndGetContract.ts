@@ -1,4 +1,4 @@
-import { ALICE } from "../constants";
+import { ADMIN } from "../constants";
 import { publicClient, walletClient } from "../clients";
 import { type Hex, getContract, type GetContractReturnType } from "viem";
 import { Abi, AbiParameter, AbiParametersToPrimitiveTypes, AbiConstructor, Address } from "abitype";
@@ -31,7 +31,7 @@ const deployAndGetContract = async <TAbi extends Abi>({
     abi: abi as Abi,
     args: args as AbiParameter[],
     bytecode,
-    account: ALICE,
+    account: ADMIN,
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({

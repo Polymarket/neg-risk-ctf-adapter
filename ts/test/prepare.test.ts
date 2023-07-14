@@ -16,7 +16,7 @@ test("can prepare market", async () => {
   const result = await contracts.negRiskAdapter.simulate.prepareMarket([BigInt(0), "0x"], { account: ALICE });
   expect(result).toBeDefined();
 
-  marketId = result.result;
+  marketId = result.result as Hex;
   expectTypeOf(marketId).toMatchTypeOf<Hex>;
 
   const prepareMarketHash = await contracts.negRiskAdapter.write.prepareMarket([BigInt(0), "0x"], {
