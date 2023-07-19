@@ -1,6 +1,6 @@
 import { ADMIN } from "../constants";
 import { publicClient, walletClient } from "../clients";
-import { type Hex, getContract, type GetContractReturnType } from "viem";
+import { type Hex, getContract, type GetContractReturnType, getAddress } from "viem";
 import { Abi, AbiParameter, AbiParametersToPrimitiveTypes, AbiConstructor, Address } from "abitype";
 
 export type GetConstructorArgs<
@@ -39,7 +39,7 @@ const deployAndGetContract = async <TAbi extends Abi>({
   });
 
   // rome-ignore lint/style/noNonNullAssertion: this is guaranteed to be set.
-  const address = receipt.contractAddress!;
+  const address = getAddress(receipt.contractAddress!);
 
   const contract = getContract({
     address,

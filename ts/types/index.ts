@@ -6,7 +6,6 @@ import type {
   WalletClient,
   Chain,
   Transport,
-  Account,
 } from "viem";
 import type { Abi, AbiParametersToPrimitiveTypes, AbiConstructor, Address } from "abitype";
 
