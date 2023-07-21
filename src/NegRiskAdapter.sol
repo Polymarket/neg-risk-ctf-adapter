@@ -230,6 +230,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256 yesPositionCount = questionCount - noPositionCount;
         uint256[] memory noPositionIds = new uint256[](noPositionCount);
         uint256[] memory yesPositionIds = new uint256[](yesPositionCount);
+        uint256[] memory accumulatedNoPositionIds = new uint256[](yesPositionCount);
 
         // mint the amount of wcol required
         wcol.mint(yesPositionCount * _amount);
@@ -254,6 +255,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                 } else {
                     // YES
                     yesPositionIds[yesIndex] = getPositionId(questionId, true);
+                    accumulatedNoPositionIds[yesIndex] = getPositionId(questionId, false);
 
                     // split position to get yes and no tokens
                     // the no tokens will be discarded
@@ -274,6 +276,13 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         {
             ctf.safeBatchTransferFrom(
                 msg.sender, noTokenBurnAddress, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
+            );
+            ctf.safeBatchTransferFrom(
+                address(this),
+                noTokenBurnAddress,
+                accumulatedNoPositionIds,
+                Helpers.values(yesPositionCount, _amount),
+                ""
             );
         }
 
