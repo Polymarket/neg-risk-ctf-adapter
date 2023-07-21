@@ -271,7 +271,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
             }
         }
 
-        // transfer accumulated no tokens to the burn address
+        // transfer the caller's no tokens _and_ accumulated no tokens to the burn address
         // these must never be redeemed
         {
             ctf.safeBatchTransferFrom(
