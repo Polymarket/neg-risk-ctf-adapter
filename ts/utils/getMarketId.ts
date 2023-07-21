@@ -13,8 +13,6 @@ const getMarketId = (oracle: Address, feeBips: bigint, metadata: Hex) => {
     pad(metadata, { dir: "right", size: metadataWords * 32 }), // pad metadata to nearest 32 byte word
   ]);
 
-  console.log(bytes);
-
   const marketId = keccak256(bytes).slice(0, 64).concat("00");
 
   return marketId;
