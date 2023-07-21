@@ -189,7 +189,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     }
 
     /*//////////////////////////////////////////////////////////////
-                            CONVERT POSITION
+                            CONVERT POSITIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Convert a set of no positions to the complementary set of yes positions plus collateral proportional to
