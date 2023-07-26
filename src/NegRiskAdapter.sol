@@ -334,8 +334,12 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @return questionId - the id of the resulting question
     function prepareQuestion(bytes32 _marketId, bytes calldata _metadata) external returns (bytes32) {
         (bytes32 questionId, uint256 questionIndex) = _prepareQuestion(_marketId);
+        bytes32 conditionId = getConditionId(questionId);
 
-        ctf.prepareCondition(address(this), questionId, 2);
+        // check to see if the condition has already been prepared on the ctf
+        if (ctf.getOutcomeSlotCount(conditionId) == 0) {
+            ctf.prepareCondition(address(this), questionId, 2);
+        }
 
         emit QuestionPrepared(_marketId, questionId, questionIndex, _metadata);
 
