@@ -145,7 +145,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         uint256 payout0 = _payouts[0];
         uint256 payout1 = _payouts[1];
 
-        if (payout0 * payout1 > 0 || payout0 + payout1 == 0) {
+        if (payout0 + payout1 != 1) {
             revert InvalidPayouts();
         }
 
