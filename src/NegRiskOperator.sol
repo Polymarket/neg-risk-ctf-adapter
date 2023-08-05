@@ -225,9 +225,11 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     }
 
     /*//////////////////////////////////////////////////////////////
-                                FALLBACK
+                                 NO-OP
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Allows the Oracle to treat the Operator like the CTF, i.e., to call prepareCondition
-    fallback() external {}
+    function prepareCondition(address, bytes32, uint256) external {
+        // no-op
+    }
 }
