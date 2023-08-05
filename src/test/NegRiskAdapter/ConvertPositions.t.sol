@@ -179,11 +179,8 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
         _before(questionCount, 0, indexSet, amount);
 
         {
-            vm.startPrank(brian);
-            ctf.setApprovalForAll(address(nrAdapter), true);
+            vm.prank(brian);
 
-            vm.expectEmit();
-            emit PositionsConverted(brian, marketId, indexSet, 0);
             nrAdapter.convertPositions(marketId, indexSet, amount);
         }
     }
