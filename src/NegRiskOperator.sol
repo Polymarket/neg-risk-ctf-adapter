@@ -161,7 +161,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
         bool result = payout0 == 1 ? true : false;
 
-        results[questionId] = payout0 == 1 ? true : false;
+        results[questionId] = result;
         reportedAt[questionId] = block.timestamp;
 
         emit QuestionReported(questionId, _requestId, result);
