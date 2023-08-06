@@ -48,7 +48,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     address public immutable vault;
 
     address public constant noTokenBurnAddress = address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
-    uint256 public constant feeDenominator = 10_000;
+    uint256 public constant FEE_DENOMINATOR = 10_000;
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -277,7 +277,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
             );
         }
 
-        uint256 feeAmount = (_amount * md.feeBips()) / 10_000;
+        uint256 feeAmount = (_amount * md.feeBips()) / FEE_DENOMINATOR;
         uint256 amountOut = _amount - feeAmount;
 
         if (noPositionIds.length > 1) {
