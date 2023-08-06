@@ -47,7 +47,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
     NegRiskAdapter public immutable nrAdapter;
     address public oracle;
-    uint256 public constant delayPeriod = 2 hours;
+    uint256 public constant DELAY_PERIOD = 2 hours;
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
     mapping(bytes32 _questionId => bool) public results;
@@ -179,7 +179,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         uint256 reportedAt_ = reportedAt[_questionId];
 
         if (reportedAt_ == 0) revert ResultNotAvailable();
-        if (block.timestamp < reportedAt_ + delayPeriod) {
+        if (block.timestamp < reportedAt_ + DELAY_PERIOD) {
             revert DelayPeriodNotOver();
         }
 
@@ -215,7 +215,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         uint256 flaggedAt_ = flaggedAt[_questionId];
 
         if (flaggedAt_ == 0) revert OnlyFlagged();
-        if (block.timestamp < flaggedAt_ + delayPeriod) {
+        if (block.timestamp < flaggedAt_ + DELAY_PERIOD) {
             revert DelayPeriodNotOver();
         }
 

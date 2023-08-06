@@ -49,7 +49,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     WrappedCollateral public immutable wcol;
     address public immutable vault;
 
-    address public constant noTokenBurnAddress = address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
+    address public constant NO_TOKEN_BURN_ADDRESS = address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
     uint256 public constant FEE_DENOMINATOR = 10_000;
 
     /*//////////////////////////////////////////////////////////////
@@ -273,7 +273,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         // these must never be redeemed
         {
             ctf.safeBatchTransferFrom(
-                msg.sender, noTokenBurnAddress, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
+                msg.sender, NO_TOKEN_BURN_ADDRESS, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
             );
         }
 

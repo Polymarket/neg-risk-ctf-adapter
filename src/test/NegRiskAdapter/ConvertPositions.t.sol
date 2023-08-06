@@ -70,7 +70,7 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
                     // brian has no more of this no token
                     assertEq(ctf.balanceOf(brian, positionId), 0);
                     // they are all at the no token burn address
-                    assertEq(ctf.balanceOf(nrAdapter.noTokenBurnAddress(), positionId), _amount);
+                    assertEq(ctf.balanceOf(nrAdapter.NO_TOKEN_BURN_ADDRESS(), positionId), _amount);
                     ++noPositionsCount;
                 } else {
                     // YES
