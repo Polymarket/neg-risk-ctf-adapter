@@ -48,7 +48,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     address public immutable vault;
 
     address public constant noTokenBurnAddress = address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
-    uint256 public constant feeDenominator = 1_00_00;
+    uint256 public constant feeDenominator = 10_000;
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -277,7 +277,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
             );
         }
 
-        uint256 feeAmount = (_amount * md.feeBips()) / 1_00_00;
+        uint256 feeAmount = (_amount * md.feeBips()) / 10_000;
         uint256 amountOut = _amount - feeAmount;
 
         if (noPositionIds.length > 1) {
@@ -313,7 +313,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Prepare a multi-outcome market
-    /// @param _feeBips  - the fee for the market, out of 1_00_00
+    /// @param _feeBips  - the fee for the market, out of 10_000
     /// @param _metadata     - metadata for the market
     /// @return marketId - the marketId
     function prepareMarket(uint256 _feeBips, bytes calldata _metadata) external returns (bytes32) {

@@ -53,7 +53,7 @@ abstract contract MarketStateManager is IMarketStateManagerEE {
 
     /// @notice Prepares market data
     /// @notice The market id depends on the oracle address, feeBips, and market metadata
-    /// @param _feeBips  - feeBips out of 1_00_00
+    /// @param _feeBips  - feeBips out of 10_000
     /// @param _metadata - market metadata
     /// @return marketId - the market id
     function _prepareMarket(uint256 _feeBips, bytes memory _metadata) internal returns (bytes32 marketId) {
@@ -62,7 +62,7 @@ abstract contract MarketStateManager is IMarketStateManagerEE {
         MarketData md = marketData[marketId];
 
         if (md.oracle() != address(0)) revert MarketAlreadyPrepared();
-        if (_feeBips > 1_00_00) revert FeeBipsOutOfBounds();
+        if (_feeBips > 10_000) revert FeeBipsOutOfBounds();
 
         marketData[marketId] = MarketDataLib.initialize(oracle, _feeBips);
     }

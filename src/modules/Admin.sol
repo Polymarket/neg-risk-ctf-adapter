@@ -10,7 +10,7 @@ import {IAdmin} from "./interfaces/IAdmin.sol";
 /// @notice Admins can pause and unpause individual questions,
 /// @notice which allows them to emergency resolve the question
 /// @notice after a safety period.
-/// @notice Admins can also globally paused resolution of all questions,
+/// @notice Admins can also globally pause resolution of all questions,
 /// @notice which causes calls to `resolve` to revert.
 /// @notice Global pausing _does not_ affect emergency resolution.
 abstract contract Admin is Auth, IAdmin {

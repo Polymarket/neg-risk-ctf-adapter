@@ -12,7 +12,7 @@ library NegRiskIdLib {
 
     /// @notice Returns the MarketId for a given oracle, feeBips, and metadata
     /// @param _oracle   - the oracle address
-    /// @param _feeBips  - the feeBips, out of 1_00_00
+    /// @param _feeBips  - the feeBips, out of 10_000
     /// @param _metadata - the market metadata
     /// @return marketId - the marketId
     function getMarketId(address _oracle, uint256 _feeBips, bytes memory _metadata) internal pure returns (bytes32) {
