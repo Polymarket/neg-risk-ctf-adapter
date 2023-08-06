@@ -2,7 +2,8 @@
 pragma solidity 0.8.19;
 
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
-import {SafeTransferLib, ERC20} from "lib/solmate/src/utils/SafeTransferLib.sol";
+import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {Admin} from "src/modules/Admin.sol";
@@ -38,6 +39,8 @@ interface INegRiskAdapterEE is IMarketStateManagerEE {
 /// complementary yes positions
 /// @author Mike Shrieve (mike@polymarket.com)
 contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE {
+    using SafeTransferLib for ERC20;
+
     /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
@@ -120,7 +123,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @param _conditionId - the conditionId for the question
     /// @param _amount - the amount of collateral to split
     function splitPosition(bytes32 _conditionId, uint256 _amount) public {
-        SafeTransferLib.safeTransferFrom(col, msg.sender, address(this), _amount);
+        col.safeTransferFrom(msg.sender, address(this), _amount);
         wcol.wrap(address(this), _amount);
         ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
         ctf.safeBatchTransferFrom(
