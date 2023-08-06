@@ -182,7 +182,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
         uint256 payout = wcol.balanceOf(address(this));
         if (payout > 0) {
-            wcol.unwrap(msg.sender, wcol.balanceOf(address(this)));
+            wcol.unwrap(msg.sender, payout);
         }
 
         emit PayoutRedemption(msg.sender, _conditionId, _amounts, payout);
