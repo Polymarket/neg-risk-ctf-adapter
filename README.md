@@ -10,3 +10,9 @@ The underlying binary markets are implemented using Gnosis’s Conditional Token
 The NegRiskOperator is designed to allow admin accounts to prepare questions and markets, as well as to integrate with resolution sources.
 
 The Vault holds USDC and Yes tokens which are collected as fees from users who choose to convert NO positions, given a positive fee rate.
+
+## Use with the UmaCtfAdapter
+
+The NegRiskOperator and NegRiskAdapter are designed to be used with the [UmaCtfAdapter](https://github.com/Polymarket/uma-ctf-adapter), or any oracle with the same interface.
+A dedicated UmaCtfAdapter will need to be deployed with the UmaCtfAdapter's `ctf` set to the address of the NegRiskAdapter, and the NegRiskOperator's `oracle` set to the address of the UmaCtfAdapter.
+Note that the UmaCtfAdapter can return `[1,1]` as a possible outcome, which is not a valid outcome for the NegRiskAdapter. The NegRiskAdapter will revert if it receives this outcome. It is important that markets/questions are chosen carefully so that this outcome is not possible.

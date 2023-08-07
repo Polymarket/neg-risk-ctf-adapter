@@ -56,6 +56,8 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
     }
 
     function test_revert_setOracle_oracleAlreadyIntialized(address _oracle1, address _oracle2) public {
+        vm.assume(_oracle1 != address(0));
+
         vm.startPrank(alice);
         NegRiskOperator nro = new NegRiskOperator(address(0));
         nro.setOracle(_oracle1);
