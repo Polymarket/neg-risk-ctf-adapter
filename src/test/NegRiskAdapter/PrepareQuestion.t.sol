@@ -15,9 +15,50 @@ contract NegRiskAdapter_PrepareQuestion_Test is NegRiskAdapter_SetUp {
 
         while (i < 255) {
             bytes memory data = abi.encodePacked("question", i);
+            bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, i);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // events
             vm.expectEmit();
-            emit QuestionPrepared(marketId, NegRiskIdLib.getQuestionId(marketId, i), i, data);
+            emit QuestionPrepared(marketId, questionId, i, data);
+
+            // prepare question
             nrAdapter.prepareQuestion(marketId, data);
+
+            // assertions
+            assertEq(NegRiskIdLib.getQuestionId(marketId, i), bytes32(uint256(marketId) + i));
+            assertEq(nrAdapter.getQuestionCount(marketId), i + 1);
+            assertEq(ctf.getOutcomeSlotCount(conditionId), 2);
+
+            // increment index
+            ++i;
+        }
+    }
+
+    function test_prepareQuestion_conditionAlreadyPrepared() public {
+        uint256 feeBips = 0;
+
+        vm.startPrank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, "market");
+
+        uint8 i = 0;
+
+        while (i < 255) {
+            bytes memory data = abi.encodePacked("question", i);
+            bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, i);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // pre-prepare the condition on the oracle
+            ctf.prepareCondition(address(nrAdapter), questionId, 2);
+            assertEq(ctf.getOutcomeSlotCount(conditionId), 2);
+
+            // events
+            vm.expectEmit();
+            emit QuestionPrepared(marketId, questionId, i, data);
+
+            // prepare question
+            nrAdapter.prepareQuestion(marketId, data);
+
             assertEq(NegRiskIdLib.getQuestionId(marketId, i), bytes32(uint256(marketId) + i));
             assertEq(nrAdapter.getQuestionCount(marketId), i + 1);
             ++i;
