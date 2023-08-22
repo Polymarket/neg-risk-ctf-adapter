@@ -70,8 +70,6 @@ contract ConditionalTokensSnapshots is TestHelper, GasSnapshot {
         ctf.prepareCondition(oracle, questionId, 2);
 
         uint256 amount = 10_000_000;
-        bytes memory data = new bytes(0);
-        uint256 feeBips = 0;
 
         vm.startPrank(alice);
         usdc.mint(alice, 2 * amount);
