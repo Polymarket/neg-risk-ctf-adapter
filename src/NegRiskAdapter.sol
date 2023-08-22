@@ -2,6 +2,8 @@
 pragma solidity 0.8.19;
 
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
+import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {MarketData, MarketStateManager, IMarketStateManagerEE} from "src/modules/MarketDataManager.sol";
@@ -9,7 +11,6 @@ import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
 import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
 
 /// @title INegRiskAdapterEE
 /// @notice NegRiskAdapter Errors and Events
@@ -37,12 +38,14 @@ interface INegRiskAdapterEE is IMarketStateManagerEE {
 /// complementary yes positions
 /// @author Mike Shrieve (mike@polymarket.com)
 contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE {
+    using SafeTransferLib for ERC20;
+
     /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
 
     IConditionalTokens public immutable ctf;
-    IERC20 public immutable col;
+    ERC20 public immutable col;
     WrappedCollateral public immutable wcol;
     address public immutable vault;
 
@@ -57,7 +60,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @param _collateral - collateral address
     constructor(address _ctf, address _collateral, address _vault) {
         ctf = IConditionalTokens(_ctf);
-        col = IERC20(_collateral);
+        col = ERC20(_collateral);
         vault = _vault;
 
         wcol = new WrappedCollateral(_collateral, col.decimals());
@@ -119,7 +122,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @param _conditionId - the conditionId for the question
     /// @param _amount - the amount of collateral to split
     function splitPosition(bytes32 _conditionId, uint256 _amount) public {
-        col.transferFrom(msg.sender, address(this), _amount);
+        col.safeTransferFrom(msg.sender, address(this), _amount);
         wcol.wrap(address(this), _amount);
         ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
         ctf.safeBatchTransferFrom(
