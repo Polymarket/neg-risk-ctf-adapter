@@ -160,7 +160,6 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         }
 
         bool result = payout0 == 1 ? true : false;
-        uint256 reportedAt_ = block.timestamp;
 
         results[questionId] = payout0 == 1 ? true : false;
         reportedAt[questionId] = block.timestamp;
