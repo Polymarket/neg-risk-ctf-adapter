@@ -5,10 +5,8 @@ import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
 
-import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
 import {Auth} from "src/modules/Auth.sol";
 import {IERC1155} from "src/interfaces/IConditionalTokens.sol";
-import {IUmaCtfAdapter} from "src/interfaces/IUmaCtfAdapter.sol";
 
 /// @title Vault
 /// @notice A contract for holding ERC20 and ERC1155 tokens for the NegRiskAdapter
