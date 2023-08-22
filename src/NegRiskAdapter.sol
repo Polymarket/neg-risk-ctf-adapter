@@ -2,15 +2,15 @@
 pragma solidity 0.8.19;
 
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
+import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
-import {Admin} from "src/modules/Admin.sol";
 import {MarketData, MarketStateManager, IMarketStateManagerEE} from "src/modules/MarketDataManager.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
 import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
 
 /// @title INegRiskAdapterEE
 /// @notice NegRiskAdapter Errors and Events
@@ -38,17 +38,19 @@ interface INegRiskAdapterEE is IMarketStateManagerEE {
 /// complementary yes positions
 /// @author Mike Shrieve (mike@polymarket.com)
 contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE {
+    using SafeTransferLib for ERC20;
+
     /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
 
     IConditionalTokens public immutable ctf;
-    IERC20 public immutable col;
+    ERC20 public immutable col;
     WrappedCollateral public immutable wcol;
     address public immutable vault;
 
-    address public constant noTokenBurnAddress = address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
-    uint256 public constant feeDenominator = 1_00_00;
+    address public constant NO_TOKEN_BURN_ADDRESS = address(bytes20(bytes32(keccak256("NO_TOKEN_BURN_ADDRESS"))));
+    uint256 public constant FEE_DENOMINATOR = 10_000;
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -58,7 +60,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @param _collateral - collateral address
     constructor(address _ctf, address _collateral, address _vault) {
         ctf = IConditionalTokens(_ctf);
-        col = IERC20(_collateral);
+        col = ERC20(_collateral);
         vault = _vault;
 
         wcol = new WrappedCollateral(_collateral, col.decimals());
@@ -98,8 +100,6 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         return positionId;
     }
 
-    // to-do: add external view helpers for marketId/questionId (?)
-
     /*//////////////////////////////////////////////////////////////
                              SPLIT POSITION
     //////////////////////////////////////////////////////////////*/
@@ -120,7 +120,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @param _conditionId - the conditionId for the question
     /// @param _amount - the amount of collateral to split
     function splitPosition(bytes32 _conditionId, uint256 _amount) public {
-        col.transferFrom(msg.sender, address(this), _amount);
+        col.safeTransferFrom(msg.sender, address(this), _amount);
         wcol.wrap(address(this), _amount);
         ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
         ctf.safeBatchTransferFrom(
@@ -182,14 +182,14 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
         uint256 payout = wcol.balanceOf(address(this));
         if (payout > 0) {
-            wcol.unwrap(msg.sender, wcol.balanceOf(address(this)));
+            wcol.unwrap(msg.sender, payout);
         }
 
         emit PayoutRedemption(msg.sender, _conditionId, _amounts, payout);
     }
 
     /*//////////////////////////////////////////////////////////////
-                            CONVERT POSITION
+                            CONVERT POSITIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Convert a set of no positions to the complementary set of yes positions plus collateral proportional to
@@ -210,7 +210,6 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
         // if _amount is 0, return early
         if (_amount == 0) {
-            emit PositionsConverted(msg.sender, _marketId, _indexSet, _amount);
             return;
         }
 
@@ -230,6 +229,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256 yesPositionCount = questionCount - noPositionCount;
         uint256[] memory noPositionIds = new uint256[](noPositionCount);
         uint256[] memory yesPositionIds = new uint256[](yesPositionCount);
+        uint256[] memory accumulatedNoPositionIds = new uint256[](yesPositionCount);
 
         // mint the amount of wcol required
         wcol.mint(yesPositionCount * _amount);
@@ -254,6 +254,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                 } else {
                     // YES
                     yesPositionIds[yesIndex] = getPositionId(questionId, true);
+                    accumulatedNoPositionIds[yesIndex] = getPositionId(questionId, false);
 
                     // split position to get yes and no tokens
                     // the no tokens will be discarded
@@ -269,15 +270,22 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
             }
         }
 
-        // transfer accumulated no tokens to the burn address
+        // transfer the caller's no tokens _and_ accumulated no tokens to the burn address
         // these must never be redeemed
         {
             ctf.safeBatchTransferFrom(
-                msg.sender, noTokenBurnAddress, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
+                msg.sender, NO_TOKEN_BURN_ADDRESS, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
+            );
+            ctf.safeBatchTransferFrom(
+                address(this),
+                NO_TOKEN_BURN_ADDRESS,
+                accumulatedNoPositionIds,
+                Helpers.values(yesPositionCount, _amount),
+                ""
             );
         }
 
-        uint256 feeAmount = (_amount * md.feeBips()) / 1_00_00;
+        uint256 feeAmount = (_amount * md.feeBips()) / FEE_DENOMINATOR;
         uint256 amountOut = _amount - feeAmount;
 
         if (noPositionIds.length > 1) {
@@ -313,7 +321,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Prepare a multi-outcome market
-    /// @param _feeBips  - the fee for the market, out of 1_00_00
+    /// @param _feeBips  - the fee for the market, out of 10_000
     /// @param _metadata     - metadata for the market
     /// @return marketId - the marketId
     function prepareMarket(uint256 _feeBips, bytes calldata _metadata) external returns (bytes32) {
@@ -334,8 +342,12 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @return questionId - the id of the resulting question
     function prepareQuestion(bytes32 _marketId, bytes calldata _metadata) external returns (bytes32) {
         (bytes32 questionId, uint256 questionIndex) = _prepareQuestion(_marketId);
+        bytes32 conditionId = getConditionId(questionId);
 
-        ctf.prepareCondition(address(this), questionId, 2);
+        // check to see if the condition has already been prepared on the ctf
+        if (ctf.getOutcomeSlotCount(conditionId) == 0) {
+            ctf.prepareCondition(address(this), questionId, 2);
+        }
 
         emit QuestionPrepared(_marketId, questionId, questionIndex, _metadata);
 

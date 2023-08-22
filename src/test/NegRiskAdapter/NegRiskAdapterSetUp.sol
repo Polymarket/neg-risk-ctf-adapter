@@ -17,7 +17,7 @@ contract NegRiskAdapter_SetUp is TestHelper, INegRiskAdapterEE {
     address oracle;
     address vault;
 
-    uint256 constant FEE_BIPS_MAX = 1_00_00;
+    uint256 constant FEE_BIPS_MAX = 10_000;
 
     function setUp() public virtual {
         vault = _getAndLabelAddress("vault");

@@ -65,21 +65,31 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
             while (i < _questionCount) {
                 if (_indexSet & (1 << i) > 0) {
                     // NO
-                    uint256 positionId = nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), false);
+                    uint256 yesPositionId = nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), true);
+                    uint256 noPositionId = nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), false);
 
-                    // brian has no more of this no token
-                    assertEq(ctf.balanceOf(brian, positionId), 0);
+                    // brian has no more of the no token
+                    assertEq(ctf.balanceOf(brian, noPositionId), 0);
                     // they are all at the no token burn address
-                    assertEq(ctf.balanceOf(nrAdapter.noTokenBurnAddress(), positionId), _amount);
+                    assertEq(ctf.balanceOf(nrAdapter.NO_TOKEN_BURN_ADDRESS(), noPositionId), _amount);
+                    // nr adapter should have no conditional tokens
+                    assertEq(ctf.balanceOf(address(nrAdapter), yesPositionId), 0);
+                    assertEq(ctf.balanceOf(address(nrAdapter), noPositionId), 0);
                     ++noPositionsCount;
                 } else {
                     // YES
-                    uint256 positionId = nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), true);
+                    uint256 yesPositionId = nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), true);
+                    uint256 noPositionId = nrAdapter.getPositionId(NegRiskIdLib.getQuestionId(marketId, i), false);
 
                     // brian has _amount of each yes token, after fees
-                    assertEq(ctf.balanceOf(brian, positionId), _amount - feeAmount);
+                    assertEq(ctf.balanceOf(brian, yesPositionId), _amount - feeAmount);
                     // vault has the rest of yes tokens as fees
-                    assertEq(ctf.balanceOf(vault, positionId), feeAmount);
+                    assertEq(ctf.balanceOf(vault, yesPositionId), feeAmount);
+                    // no tokens should be at the burn address
+                    assertEq(ctf.balanceOf(nrAdapter.NO_TOKEN_BURN_ADDRESS(), noPositionId), _amount);
+                    // nr adapter should have no conditional tokens
+                    assertEq(ctf.balanceOf(address(nrAdapter), yesPositionId), 0);
+                    assertEq(ctf.balanceOf(address(nrAdapter), noPositionId), 0);
                     ++yesPositionsCount;
                 }
                 ++i;
@@ -179,11 +189,8 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
         _before(questionCount, 0, indexSet, amount);
 
         {
-            vm.startPrank(brian);
-            ctf.setApprovalForAll(address(nrAdapter), true);
+            vm.prank(brian);
 
-            vm.expectEmit();
-            emit PositionsConverted(brian, marketId, indexSet, 0);
             nrAdapter.convertPositions(marketId, indexSet, amount);
         }
     }

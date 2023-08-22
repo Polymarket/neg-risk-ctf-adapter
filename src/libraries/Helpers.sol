@@ -5,6 +5,7 @@ import {CTHelpers} from "./CTHelpers.sol";
 
 /// @title Helpers
 /// @notice Helper functions for the NegRiskAdapter
+/// @author Mike Shrieve (mike@polymarket.com)
 library Helpers {
     /// @notice Returns the positionIds corresponding to _conditionId
     /// @param _collateral  - the collateral address
