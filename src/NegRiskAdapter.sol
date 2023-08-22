@@ -100,8 +100,6 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         return positionId;
     }
 
-    // to-do: add external view helpers for marketId/questionId (?)
-
     /*//////////////////////////////////////////////////////////////
                              SPLIT POSITION
     //////////////////////////////////////////////////////////////*/
