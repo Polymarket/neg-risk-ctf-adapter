@@ -47,7 +47,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
     NegRiskAdapter public immutable nrAdapter;
     address public oracle;
-    uint256 public constant delayPeriod = 2 hours;
+    uint256 public constant delayPeriod = 12 hours;
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
     mapping(bytes32 _questionId => bool) public results;
@@ -145,7 +145,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         uint256 payout0 = _payouts[0];
         uint256 payout1 = _payouts[1];
 
-        if (payout0 * payout1 > 0 || payout0 + payout1 == 0) {
+        if (payout0 + payout1 != 1) {
             revert InvalidPayouts();
         }
 
@@ -224,9 +224,11 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     }
 
     /*//////////////////////////////////////////////////////////////
-                                FALLBACK
+                                 NO-OP
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Allows the Oracle to treat the Operator like the CTF, i.e., to call prepareCondition
-    fallback() external {}
+    function prepareCondition(address, bytes32, uint256) external {
+        // no-op
+    }
 }

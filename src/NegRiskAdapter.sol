@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
 
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
-import {Admin} from "src/modules/Admin.sol";
 import {MarketData, MarketStateManager, IMarketStateManagerEE} from "src/modules/MarketDataManager.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
@@ -189,7 +188,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     }
 
     /*//////////////////////////////////////////////////////////////
-                            CONVERT POSITION
+                            CONVERT POSITIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Convert a set of no positions to the complementary set of yes positions plus collateral proportional to
@@ -210,7 +209,6 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
         // if _amount is 0, return early
         if (_amount == 0) {
-            emit PositionsConverted(msg.sender, _marketId, _indexSet, _amount);
             return;
         }
 
@@ -230,6 +228,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256 yesPositionCount = questionCount - noPositionCount;
         uint256[] memory noPositionIds = new uint256[](noPositionCount);
         uint256[] memory yesPositionIds = new uint256[](yesPositionCount);
+        uint256[] memory accumulatedNoPositionIds = new uint256[](yesPositionCount);
 
         // mint the amount of wcol required
         wcol.mint(yesPositionCount * _amount);
@@ -254,6 +253,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                 } else {
                     // YES
                     yesPositionIds[yesIndex] = getPositionId(questionId, true);
+                    accumulatedNoPositionIds[yesIndex] = getPositionId(questionId, false);
 
                     // split position to get yes and no tokens
                     // the no tokens will be discarded
@@ -269,11 +269,18 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
             }
         }
 
-        // transfer accumulated no tokens to the burn address
+        // transfer the caller's no tokens _and_ accumulated no tokens to the burn address
         // these must never be redeemed
         {
             ctf.safeBatchTransferFrom(
                 msg.sender, noTokenBurnAddress, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
+            );
+            ctf.safeBatchTransferFrom(
+                address(this),
+                noTokenBurnAddress,
+                accumulatedNoPositionIds,
+                Helpers.values(yesPositionCount, _amount),
+                ""
             );
         }
 
@@ -334,8 +341,12 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @return questionId - the id of the resulting question
     function prepareQuestion(bytes32 _marketId, bytes calldata _metadata) external returns (bytes32) {
         (bytes32 questionId, uint256 questionIndex) = _prepareQuestion(_marketId);
+        bytes32 conditionId = getConditionId(questionId);
 
-        ctf.prepareCondition(address(this), questionId, 2);
+        // check to see if the condition has already been prepared on the ctf
+        if (ctf.getOutcomeSlotCount(conditionId) == 0) {
+            ctf.prepareCondition(address(this), questionId, 2);
+        }
 
         emit QuestionPrepared(_marketId, questionId, questionIndex, _metadata);
 
