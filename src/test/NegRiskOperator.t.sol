@@ -69,7 +69,7 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
     //////////////////////////////////////////////////////////////*/
 
     function test_prepareMarket(uint256 _feeBips, bytes memory _data) public {
-        _feeBips = bound(_feeBips, 0, 1_00_00);
+        _feeBips = bound(_feeBips, 0, 10_000);
 
         vm.expectEmit();
         emit MarketPrepared(NegRiskIdLib.getMarketId(address(nrOperator), _feeBips, _data), _feeBips, _data);

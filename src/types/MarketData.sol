@@ -63,7 +63,7 @@ library MarketDataLib {
 
     /// @notice initializes the MarketData type
     /// @param _oracle - the address of the oracle
-    /// @param _feeBips - the feeBips, out of 1_00_00
+    /// @param _feeBips - the feeBips, out of 10_000
     /// @return marketData - the initialized MarketData
     function initialize(address _oracle, uint256 _feeBips) internal pure returns (MarketData) {
         bytes32 data;
@@ -79,7 +79,7 @@ library MarketDataLib {
         return uint256(uint8(MarketData.unwrap(_data)[2]));
     }
 
-    /// @notice extracts the feeBips from MarketData, out of 1_00_00
+    /// @notice extracts the feeBips from MarketData, out of 10_000
     /// @return feeBips - the feeBips
     function feeBips(MarketData _data) internal pure returns (uint256) {
         return uint256(uint16(bytes2(MarketData.unwrap(_data) << 24)));

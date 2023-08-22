@@ -91,7 +91,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Prepares a market on the NegRiskAdapter
-    /// @param _feeBips - the market's fee rate out of 1_00_00
+    /// @param _feeBips - the market's fee rate out of 10_000
     /// @param _data - the market metadata to be passed to the NegRiskAdapter
     /// @return marketId - the market id
     function prepareMarket(uint256 _feeBips, bytes calldata _data) external onlyAdmin returns (bytes32) {
