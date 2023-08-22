@@ -189,7 +189,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     }
 
     /*//////////////////////////////////////////////////////////////
-                            CONVERT POSITION
+                            CONVERT POSITIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Convert a set of no positions to the complementary set of yes positions plus collateral proportional to
@@ -230,6 +230,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256 yesPositionCount = questionCount - noPositionCount;
         uint256[] memory noPositionIds = new uint256[](noPositionCount);
         uint256[] memory yesPositionIds = new uint256[](yesPositionCount);
+        uint256[] memory accumulatedNoPositionIds = new uint256[](yesPositionCount);
 
         // mint the amount of wcol required
         wcol.mint(yesPositionCount * _amount);
@@ -254,6 +255,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                 } else {
                     // YES
                     yesPositionIds[yesIndex] = getPositionId(questionId, true);
+                    accumulatedNoPositionIds[yesIndex] = getPositionId(questionId, false);
 
                     // split position to get yes and no tokens
                     // the no tokens will be discarded
@@ -269,11 +271,18 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
             }
         }
 
-        // transfer accumulated no tokens to the burn address
+        // transfer the caller's no tokens _and_ accumulated no tokens to the burn address
         // these must never be redeemed
         {
             ctf.safeBatchTransferFrom(
                 msg.sender, noTokenBurnAddress, noPositionIds, Helpers.values(noPositionIds.length, _amount), ""
+            );
+            ctf.safeBatchTransferFrom(
+                address(this),
+                noTokenBurnAddress,
+                accumulatedNoPositionIds,
+                Helpers.values(yesPositionCount, _amount),
+                ""
             );
         }
 
