@@ -16,6 +16,8 @@ using MarketDataLib for MarketData global;
 /// @notice Library for dealing with the MarketData user-defined bytes32 type
 /// @author Mike Shrieve (mike@polymarket.com)
 library MarketDataLib {
+    error DeterminedFlagAlreadySet();
+
     /// @notice used to increment the questionCount
     uint256 constant INCREMENT = uint256(bytes32(bytes1(0x01)));
 
@@ -52,7 +54,7 @@ library MarketDataLib {
     function determine(MarketData _data, uint256 _result) internal pure returns (MarketData) {
         bytes32 data = MarketData.unwrap(_data);
 
-        if (data[1] != 0x00) revert();
+        if (data[1] != 0x00) revert DeterminedFlagAlreadySet();
         data |= bytes32(bytes1(0x01)) >> 8;
         data |= bytes32(bytes1(uint8(_result))) >> 16;
 
