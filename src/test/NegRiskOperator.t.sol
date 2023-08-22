@@ -221,7 +221,7 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         vm.prank(oracle);
         nrOperator.reportPayouts(_requestId, _result ? payoutsTrue : payoutsFalse);
 
-        skip(nrOperator.delayPeriod());
+        skip(nrOperator.DELAY_PERIOD());
 
         vm.expectEmit();
         emit QuestionResolved(questionId, _result);
@@ -264,7 +264,7 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
 
         assertEq(nrOperator.reportedAt(questionId), block.timestamp);
 
-        uint256 earliestResolvableTimestamp = block.timestamp + nrOperator.delayPeriod();
+        uint256 earliestResolvableTimestamp = block.timestamp + nrOperator.DELAY_PERIOD();
         _timestamp = bound(_timestamp, 0, earliestResolvableTimestamp - 1);
         vm.warp(_timestamp);
 
@@ -341,7 +341,7 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         vm.prank(alice);
         nrOperator.flagQuestion(questionId);
 
-        skip(nrOperator.delayPeriod());
+        skip(nrOperator.DELAY_PERIOD());
 
         vm.expectEmit();
         emit QuestionEmergencyResolved(questionId, _result);
@@ -370,7 +370,7 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
         vm.prank(alice);
         nrOperator.flagQuestion(questionId);
 
-        uint256 earliestResolvableTimestamp = block.timestamp + nrOperator.delayPeriod();
+        uint256 earliestResolvableTimestamp = block.timestamp + nrOperator.DELAY_PERIOD();
         _timestamp = bound(_timestamp, 0, earliestResolvableTimestamp - 1);
 
         vm.warp(_timestamp);

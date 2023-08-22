@@ -71,7 +71,7 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
                     // brian has no more of the no token
                     assertEq(ctf.balanceOf(brian, noPositionId), 0);
                     // they are all at the no token burn address
-                    assertEq(ctf.balanceOf(nrAdapter.noTokenBurnAddress(), noPositionId), _amount);
+                    assertEq(ctf.balanceOf(nrAdapter.NO_TOKEN_BURN_ADDRESS(), noPositionId), _amount);
                     // nr adapter should have no conditional tokens
                     assertEq(ctf.balanceOf(address(nrAdapter), yesPositionId), 0);
                     assertEq(ctf.balanceOf(address(nrAdapter), noPositionId), 0);
@@ -86,7 +86,7 @@ contract NegRiskAdapter_ConvertPositions_Test is NegRiskAdapter_SetUp {
                     // vault has the rest of yes tokens as fees
                     assertEq(ctf.balanceOf(vault, yesPositionId), feeAmount);
                     // no tokens should be at the burn address
-                    assertEq(ctf.balanceOf(nrAdapter.noTokenBurnAddress(), noPositionId), _amount);
+                    assertEq(ctf.balanceOf(nrAdapter.NO_TOKEN_BURN_ADDRESS(), noPositionId), _amount);
                     // nr adapter should have no conditional tokens
                     assertEq(ctf.balanceOf(address(nrAdapter), yesPositionId), 0);
                     assertEq(ctf.balanceOf(address(nrAdapter), noPositionId), 0);
