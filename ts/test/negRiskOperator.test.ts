@@ -1,16 +1,14 @@
-import { stringToHex, getContract, keccak256, concat, toHex, pad, toBytes } from "viem";
+import { stringToHex, getContract } from "viem";
 import { afterAll, expect, test, beforeEach } from "vitest";
 
 import { deployAll } from "./setup/utils/deployAll";
 import { ADMIN, ALICE, BRIAN } from "./setup/constants";
 import { publicClient, walletClient } from "./setup/clients";
 import { getNegRiskOperator } from "../contracts/negRiskOperator";
-// import { negRiskOperator } from "../contracts/abi";
 import { negRiskAdapter } from "../contracts/abi";
-import { getMarketId } from "ts/utils/getMarketId";
+import { getMarketId } from "../utils/getMarketId";
 
 let contracts: Awaited<ReturnType<typeof deployAll>>;
-// let marketId: Hex;
 
 beforeEach(async () => {
   contracts = await deployAll();
@@ -50,7 +48,9 @@ test("can add admin", async () => {
     walletClient,
   });
 
-  const addAdminTxHash = await negRiskOperator.write.addAdmin([BRIAN], { account: ADMIN });
+  const addAdminTxHash = await negRiskOperator.write.addAdmin([BRIAN], {
+    account: ADMIN,
+  });
 
   await publicClient.waitForTransactionReceipt({ hash: addAdminTxHash });
 
@@ -58,7 +58,9 @@ test("can add admin", async () => {
 
   expect(isBrianAdmin).toEqual(true);
 
-  const renounceAdminTxHash = await negRiskOperator.write.renounceAdmin({ account: ADMIN });
+  const renounceAdminTxHash = await negRiskOperator.write.renounceAdmin({
+    account: ADMIN,
+  });
 
   await publicClient.waitForTransactionReceipt({ hash: renounceAdminTxHash });
 
@@ -78,13 +80,18 @@ test("getMarketId is correct", async () => {
   const metadata = stringToHex("multi-outcome market !!");
   const feeBips = 0n;
 
-  const prepareMarketResult = await negRiskOperatorContract.simulate.prepareMarket([0n, metadata], {
-    account: ADMIN,
-  });
+  const prepareMarketResult =
+    await negRiskOperatorContract.simulate.prepareMarket([0n, metadata], {
+      account: ADMIN,
+    });
 
   const actualMarketId = prepareMarketResult.result;
 
-  const computedMarketId = getMarketId(contracts.negRiskOperator.address, feeBips, metadata);
+  const computedMarketId = getMarketId(
+    contracts.negRiskOperator.address,
+    feeBips,
+    metadata
+  );
 
   expect(computedMarketId).toEqual(actualMarketId);
 });
@@ -103,12 +110,13 @@ test("can prepare market", async () => {
     walletClient,
   });
 
-  const prepareMarketResult = await negRiskOperatorContract.simulate.prepareMarket(
-    [0n, stringToHex("multi-outcome market")],
-    {
-      account: ADMIN,
-    },
-  );
+  const prepareMarketResult =
+    await negRiskOperatorContract.simulate.prepareMarket(
+      [0n, stringToHex("multi-outcome market")],
+      {
+        account: ADMIN,
+      }
+    );
 
   const marketId = prepareMarketResult.result;
 
@@ -116,7 +124,7 @@ test("can prepare market", async () => {
     [0n, stringToHex("multi-outcome market")],
     {
       account: ADMIN,
-    },
+    }
   );
 
   await publicClient.waitForTransactionReceipt({ hash: prepareMarketTxHash });

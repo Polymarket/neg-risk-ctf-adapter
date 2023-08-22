@@ -1,4 +1,4 @@
-import { stringToHex, toHex } from "viem";
+import { toHex } from "viem";
 import { afterAll, expect, test, beforeEach } from "vitest";
 
 import { deployAll } from "../setup/utils/deployAll";
@@ -17,9 +17,10 @@ test("getMarketId is correct", async () => {
 
   const feeBips = 1_00n;
 
-  const prepareMarketResult = await contracts.negRiskAdapter.simulate.prepareMarket([feeBips, metadata], {
-    account: oracle,
-  });
+  const prepareMarketResult =
+    await contracts.negRiskAdapter.simulate.prepareMarket([feeBips, metadata], {
+      account: oracle,
+    });
 
   const actualMarketId = prepareMarketResult.result;
 

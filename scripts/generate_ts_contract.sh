@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# string="Hello World"
-
 to_lowercase() {
     string=$1
     # Extract first character
