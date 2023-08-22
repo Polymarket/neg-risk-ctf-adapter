@@ -47,7 +47,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
     NegRiskAdapter public immutable nrAdapter;
     address public oracle;
-    uint256 public constant delayPeriod = 2 hours;
+    uint256 public constant delayPeriod = 12 hours;
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
     mapping(bytes32 _questionId => bool) public results;
