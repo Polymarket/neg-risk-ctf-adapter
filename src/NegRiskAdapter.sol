@@ -210,7 +210,6 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
         // if _amount is 0, return early
         if (_amount == 0) {
-            emit PositionsConverted(msg.sender, _marketId, _indexSet, _amount);
             return;
         }
 
