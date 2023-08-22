@@ -47,7 +47,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
     NegRiskAdapter public immutable nrAdapter;
     address public oracle;
-    uint256 public constant delayPeriod = 2 hours;
+    uint256 public constant DELAY_PERIOD = 12 hours;
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
     mapping(bytes32 _questionId => bool) public results;
@@ -91,7 +91,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Prepares a market on the NegRiskAdapter
-    /// @param _feeBips - the market's fee rate out of 1_00_00
+    /// @param _feeBips - the market's fee rate out of 10_000
     /// @param _data - the market metadata to be passed to the NegRiskAdapter
     /// @return marketId - the market id
     function prepareMarket(uint256 _feeBips, bytes calldata _data) external onlyAdmin returns (bytes32) {
@@ -145,7 +145,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         uint256 payout0 = _payouts[0];
         uint256 payout1 = _payouts[1];
 
-        if (payout0 * payout1 > 0 || payout0 + payout1 == 0) {
+        if (payout0 + payout1 != 1) {
             revert InvalidPayouts();
         }
 
@@ -160,9 +160,8 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         }
 
         bool result = payout0 == 1 ? true : false;
-        uint256 reportedAt_ = block.timestamp;
 
-        results[questionId] = payout0 == 1 ? true : false;
+        results[questionId] = result;
         reportedAt[questionId] = block.timestamp;
 
         emit QuestionReported(questionId, _requestId, result);
@@ -180,7 +179,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         uint256 reportedAt_ = reportedAt[_questionId];
 
         if (reportedAt_ == 0) revert ResultNotAvailable();
-        if (block.timestamp < reportedAt_ + delayPeriod) {
+        if (block.timestamp < reportedAt_ + DELAY_PERIOD) {
             revert DelayPeriodNotOver();
         }
 
@@ -216,7 +215,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
         uint256 flaggedAt_ = flaggedAt[_questionId];
 
         if (flaggedAt_ == 0) revert OnlyFlagged();
-        if (block.timestamp < flaggedAt_ + delayPeriod) {
+        if (block.timestamp < flaggedAt_ + DELAY_PERIOD) {
             revert DelayPeriodNotOver();
         }
 
@@ -225,9 +224,11 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     }
 
     /*//////////////////////////////////////////////////////////////
-                                FALLBACK
+                                 NO-OP
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Allows the Oracle to treat the Operator like the CTF, i.e., to call prepareCondition
-    fallback() external {}
+    function prepareCondition(address, bytes32, uint256) external {
+        // no-op
+    }
 }

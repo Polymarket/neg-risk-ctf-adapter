@@ -123,7 +123,7 @@ contract IntegrationTest is TestHelper {
         assertTrue(nrOperator.results(questionId));
         assertEq(nrOperator.reportedAt(questionId), block.timestamp);
 
-        skip(nrOperator.delayPeriod());
+        skip(nrOperator.DELAY_PERIOD());
 
         nrOperator.resolveQuestion(questionId);
 

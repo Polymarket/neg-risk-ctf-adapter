@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 
 /// @title IWrappedCollateralEE
 /// @notice WrappedCollateral Errors and Events
@@ -16,6 +17,8 @@ string constant SYMBOL = "WCOL";
 /// @author Mike Shrieve (mike@polymarket.com)
 /// @notice Wraps an ERC20 token to be used as collateral in the CTF
 contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
+    using SafeTransferLib for ERC20;
+
     /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
@@ -52,7 +55,7 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
     /// @param _amount The amount of tokens to unwrap
     function unwrap(address _to, uint256 _amount) external {
         _burn(msg.sender, _amount);
-        ERC20(underlying).transfer(_to, _amount);
+        ERC20(underlying).safeTransfer(_to, _amount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -64,7 +67,7 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
     /// @param _to The address to send the wrapped tokens to
     /// @param _amount The amount of tokens to wrap
     function wrap(address _to, uint256 _amount) external onlyOwner {
-        ERC20(underlying).transferFrom(msg.sender, address(this), _amount);
+        ERC20(underlying).safeTransferFrom(msg.sender, address(this), _amount);
         _mint(_to, _amount);
     }
 
@@ -87,6 +90,6 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
     /// @param _to The address to send the released tokens to
     /// @param _amount The amount of tokens to release
     function release(address _to, uint256 _amount) external onlyOwner {
-        ERC20(underlying).transfer(_to, _amount);
+        ERC20(underlying).safeTransfer(_to, _amount);
     }
 }

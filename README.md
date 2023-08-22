@@ -19,3 +19,7 @@ A dedicated UmaCtfAdapter will need to be deployed with the UmaCtfAdapter's `ctf
 In order to prepare a question for a market using the NegRiskOperator, the question must be initialized on the UmaCtfAdapter first. Then, the question may be prepared on the NegRiskOperator where the `_requestId` parameter is the `questionID` returned by the UmaCtfAdapter.
 
 Note that the UmaCtfAdapter can return `[1,1]` as a possible outcome, which is not a valid outcome for the NegRiskAdapter. The NegRiskAdapter will revert if it receives this outcome. It is important that markets/questions are chosen carefully so that this outcome is not possible.
+
+## Questions
+
+It is vital that markets prepared on the NegRiskAdapter never result in a tie or will be unable to be determined. For any given market, once one question is resolved as Yes/True, all other questions must be resolved as No/False. This means that if the chosen oracle returns a second question as Yes/True, the call to `reportOutcome` will revert, and the market may not be able to fully resolved. Similarly, it is expected that one question will resolve to Yes/True, and it should not be the case that all questions for a given market resolve to No/False. Keep this in mind when preparing markets and questions on the NegRiskAdapter.
