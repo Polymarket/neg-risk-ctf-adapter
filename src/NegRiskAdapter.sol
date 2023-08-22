@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
 
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
-import {Admin} from "src/modules/Admin.sol";
 import {MarketData, MarketStateManager, IMarketStateManagerEE} from "src/modules/MarketDataManager.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
