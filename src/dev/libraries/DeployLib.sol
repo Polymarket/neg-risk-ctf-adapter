@@ -26,4 +26,18 @@ library DeployLib {
         vm.label(deployment, "UmaCtfAdapter");
         return deployment;
     }
+
+    function deployNegRiskCtfExchange(
+        address _collateral,
+        address _negRiskAdapter,
+        address _ctf,
+        address _proxyFactory,
+        address _safeFactory
+    ) public returns (address) {
+        address deployment = _deployCode(
+            "artifacts/UmaCtfAdapter.json", abi.encode(_collateral, _negRiskAdapter, _ctf, _proxyFactory, _safeFactory)
+        );
+        vm.label(deployment, "UmaCtfAdapter");
+        return deployment;
+    }
 }
