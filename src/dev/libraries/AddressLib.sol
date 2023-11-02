@@ -7,7 +7,7 @@ import {stdJson} from "forge-std/Test.sol";
 library AddressLib {
     using stdJson for string;
 
-    function getAddress(string memory _name) internal returns (address) {
+    function getAddress(string memory _name) internal view returns (address) {
         string memory json = vm.readFile("./addresses.json");
 
         uint256 chainId = block.chainid;

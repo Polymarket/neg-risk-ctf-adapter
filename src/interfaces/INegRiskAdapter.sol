@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.10;
 
 interface INegRiskAdapter {
@@ -14,6 +13,8 @@ interface INegRiskAdapter {
 
     function FEE_DENOMINATOR() external view returns (uint256);
     function NO_TOKEN_BURN_ADDRESS() external view returns (address);
+    function balanceOf(address _owner, uint256 _id) external view returns (uint256);
+    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) external view returns (uint256[] memory);
     function col() external view returns (address);
     function convertPositions(bytes32 _marketId, uint256 _indexSet, uint256 _amount) external;
     function ctf() external view returns (address);
@@ -36,6 +37,14 @@ interface INegRiskAdapter {
     function prepareQuestion(bytes32 _marketId, bytes memory _metadata) external returns (bytes32);
     function redeemPositions(bytes32 _conditionId, uint256[] memory _amounts) external;
     function reportOutcome(bytes32 _questionId, bool _outcome) external;
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] memory _ids,
+        uint256[] memory _values,
+        bytes memory _data
+    ) external;
+    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes memory _data) external;
     function splitPosition(address _collateralToken, bytes32, bytes32 _conditionId, uint256[] memory, uint256 _amount)
         external;
     function splitPosition(bytes32 _conditionId, uint256 _amount) external;
