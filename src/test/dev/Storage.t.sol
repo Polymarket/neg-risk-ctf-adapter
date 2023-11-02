@@ -3,7 +3,7 @@ pragma solidity ^0.8.15;
 
 import {TestHelper, console} from "../../dev/TestHelper.sol";
 import {DeployLib} from "../../dev/libraries/DeployLib.sol";
-import {Storage} from "../../utils/Storage.sol";
+import {Storage} from "../../dev/Storage.sol";
 import {IConditionalTokens} from "../../interfaces/IConditionalTokens.sol";
 
 contract Storage_Test is TestHelper, Storage {

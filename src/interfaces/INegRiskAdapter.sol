@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.10;
 
-interface Interface {
+interface INegRiskAdapter {
     event MarketPrepared(bytes32 indexed marketId, address indexed oracle, uint256 feeBips, bytes data);
     event OutcomeReported(bytes32 indexed marketId, bytes32 indexed questionId, bool outcome);
     event PayoutRedemption(address indexed redeemer, bytes32 indexed conditionId, uint256[] amounts, uint256 payout);
@@ -41,4 +42,3 @@ interface Interface {
     function vault() external view returns (address);
     function wcol() external view returns (address);
 }
-

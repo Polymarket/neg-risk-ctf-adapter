@@ -35,9 +35,10 @@ library DeployLib {
         address _safeFactory
     ) public returns (address) {
         address deployment = _deployCode(
-            "artifacts/UmaCtfAdapter.json", abi.encode(_collateral, _negRiskAdapter, _ctf, _proxyFactory, _safeFactory)
+            "out/NegRiskCtfExchange.sol/NegRiskCtfExchange.json",
+            abi.encode(_collateral, _ctf, _negRiskAdapter, _proxyFactory, _safeFactory)
         );
-        vm.label(deployment, "UmaCtfAdapter");
+        vm.label(deployment, "NegRiskCtfExchange");
         return deployment;
     }
 }

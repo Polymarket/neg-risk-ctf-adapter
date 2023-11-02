@@ -3,11 +3,11 @@ pragma solidity ^0.8.15;
 
 import {TestHelper, console} from "src/dev/TestHelper.sol";
 
-import {NegRiskAdapter, INegRiskAdapterEE} from "src/NegRiskAdapter.sol";
-import {WrappedCollateral} from "src/WrappedCollateral.sol";
-import {DeployLib} from "src/dev/libraries/DeployLib.sol";
-import {USDC} from "src/test/mock/USDC.sol";
-import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
+import {NegRiskAdapter, INegRiskAdapterEE} from "../../NegRiskAdapter.sol";
+import {WrappedCollateral} from "../../WrappedCollateral.sol";
+import {DeployLib} from "../../dev/libraries/DeployLib.sol";
+import {USDC} from "../../test/mock/USDC.sol";
+import {IConditionalTokens} from "../../interfaces/IConditionalTokens.sol";
 
 contract NegRiskAdapter_SetUp is TestHelper, INegRiskAdapterEE {
     NegRiskAdapter nrAdapter;

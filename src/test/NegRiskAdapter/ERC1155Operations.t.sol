@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {console, NegRiskAdapter_SetUp} from "src/test/NegRiskAdapter/NegRiskAdapterSetUp.sol";
-import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
+import {console, NegRiskAdapter_SetUp} from "./NegRiskAdapterSetUp.sol";
+import {NegRiskIdLib} from "../../libraries/NegRiskIdLib.sol";
 import {IConditionalTokens} from "../../interfaces/IConditionalTokens.sol";
-import {Storage} from "../../utils/Storage.sol";
+import {Storage} from "../../dev/Storage.sol";
 
+/// @title NegRiskAdapter_ERC1155Operations_Test
+/// @notice test the ERC1155 proxy operations of the NegRiskAdapter
+///         - safeTransferFrom
+///         - safeBatchTransferFrom
+///         - balanceOf
+///         - balanceOfBatch
 contract NegRiskAdapter_ERC1155Operations_Test is NegRiskAdapter_SetUp, Storage {
     function setUp() public override {
         super.setUp();
@@ -34,8 +40,12 @@ contract NegRiskAdapter_ERC1155Operations_Test is NegRiskAdapter_SetUp, Storage 
             mstore(_values, l)
         }
 
+        address[] memory accounts = new address[](l);
         for (uint256 i = 0; i < l; i++) {
+            // ids without collisions
             uint256 id = uint256(keccak256(abi.encode(_ids[i], i)));
+            // for checking batchBalanceOf
+            accounts[i] = brian;
             _setERC1155Balance(address(ctf), alice, id, _values[i]);
             assertEq(ctf.balanceOf(alice, id), _values[i]);
             _ids[i] = id;
@@ -48,5 +58,8 @@ contract NegRiskAdapter_ERC1155Operations_Test is NegRiskAdapter_SetUp, Storage 
             assertEq(ctf.balanceOf(brian, _ids[i]), _values[i]);
             assertEq(nrAdapter.balanceOf(brian, _ids[i]), _values[i]);
         }
+
+        // balanceOfBatch
+        assertEq(nrAdapter.balanceOfBatch(accounts, _ids), _values);
     }
 }
