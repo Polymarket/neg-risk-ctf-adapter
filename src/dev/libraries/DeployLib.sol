@@ -27,6 +27,8 @@ library DeployLib {
         return deployment;
     }
 
+    /// @dev this will not correctly set the initial admin and operator
+    ///      _deployCode will not correctly use the msg.sender
     function deployNegRiskCtfExchange(
         address _collateral,
         address _negRiskAdapter,
