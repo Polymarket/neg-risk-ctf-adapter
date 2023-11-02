@@ -20,8 +20,8 @@ contract NegRiskAdapter_SetUp is TestHelper, INegRiskAdapterEE {
     uint256 constant FEE_BIPS_MAX = 10_000;
 
     function setUp() public virtual {
-        vault = _getAndLabelAddress("vault");
-        oracle = _getAndLabelAddress("oracle");
+        vault = vm.createWallet("vault").addr;
+        oracle = vm.createWallet("oracle").addr;
         ctf = IConditionalTokens(DeployLib.deployConditionalTokens());
         usdc = new USDC();
         nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), vault);

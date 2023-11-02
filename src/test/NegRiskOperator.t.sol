@@ -24,8 +24,8 @@ contract NegRiskOperatorTest is TestHelper, INegRiskOperatorEE {
     uint256[] payoutsFalse = [0, 1];
 
     function setUp() public {
-        vault = _getAndLabelAddress("vault");
-        oracle = _getAndLabelAddress("oracle");
+        vault = vm.createWallet("vault").addr;
+        oracle = vm.createWallet("oracle").addr;
         ctf = IConditionalTokens(DeployLib.deployConditionalTokens());
         usdc = new USDC();
         nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), vault);

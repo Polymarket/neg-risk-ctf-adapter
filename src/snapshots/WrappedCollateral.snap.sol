@@ -16,7 +16,7 @@ contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
 
     function setUp() public {
         usdc = new USDC();
-        owner = _getAndLabelAddress("owner");
+        owner = vm.createWallet("owner").addr;
 
         uint8 decimals = usdc.decimals();
 

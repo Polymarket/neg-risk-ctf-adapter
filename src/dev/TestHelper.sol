@@ -1,33 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {
-    Test,
-    console2 as console,
-    stdJson,
-    stdStorage,
-    StdStorage,
-    stdError
-} from "lib/forge-std/src/Test.sol";
+import {Test, console2 as console, stdJson, stdStorage, StdStorage, stdError} from "lib/forge-std/src/Test.sol";
 
 abstract contract TestHelper is Test {
     using stdJson for string;
 
-    address public immutable alice;
-    address public immutable brian;
-    address public immutable carly;
-    address public immutable devin;
+    address public alice;
+    address public brian;
+    address public carly;
+    address public devin;
 
     constructor() {
-        alice = _getAndLabelAddress("alice");
-        brian = _getAndLabelAddress("brian");
-        carly = _getAndLabelAddress("carly");
-        devin = _getAndLabelAddress("devin");
-    }
-
-    function _getAndLabelAddress(string memory _name) internal returns (address) {
-        address addr = address(bytes20(keccak256(abi.encode(_name))));
-        vm.label(addr, _name);
-        return addr;
+        alice = vm.createWallet("alice").addr;
+        brian = vm.createWallet("brian").addr;
+        carly = vm.createWallet("carly").addr;
+        devin = vm.createWallet("devin").addr;
     }
 }

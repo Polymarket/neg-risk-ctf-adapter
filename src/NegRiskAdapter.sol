@@ -165,7 +165,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     }
 
     /*//////////////////////////////////////////////////////////////
-                                ERC1155
+                           ERC1155 OPERATIONS
     //////////////////////////////////////////////////////////////*/
 
     function balanceOf(address _owner, uint256 _id) external view returns (uint256) {
