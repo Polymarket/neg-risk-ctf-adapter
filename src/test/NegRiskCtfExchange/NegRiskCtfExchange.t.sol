@@ -128,8 +128,7 @@ contract NegRiskCtfExchange_Test is NegRiskCtfExchangeTestHelper {
 
         // alice approvals
         vm.startPrank(alice.addr);
-        IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
-        IERC20(usdc).approve(negRiskCtfExchange, type(uint256).max);
+        IERC20(usdc).approve(negRiskCtfExchange, TOKEN_AMOUNT);
         vm.stopPrank();
 
         // brian approvals
@@ -203,8 +202,7 @@ contract NegRiskCtfExchange_Test is NegRiskCtfExchangeTestHelper {
 
         // alice approvals
         vm.startPrank(alice.addr);
-        IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
-        IERC20(usdc).approve(negRiskCtfExchange, type(uint256).max);
+        IERC20(usdc).approve(negRiskCtfExchange, TOKEN_AMOUNT);
         vm.stopPrank();
 
         // brian approvals
@@ -277,12 +275,12 @@ contract NegRiskCtfExchange_Test is NegRiskCtfExchangeTestHelper {
 
         // alice approvals
         vm.startPrank(alice.addr);
-        IERC20(usdc).approve(negRiskCtfExchange, type(uint256).max);
+        IERC20(usdc).approve(negRiskCtfExchange, USDC_AMOUNT);
         vm.stopPrank();
 
         // brian approvals
         vm.startPrank(brian.addr);
-        IERC20(usdc).approve(negRiskCtfExchange, type(uint256).max);
+        IERC20(usdc).approve(negRiskCtfExchange, USDC_AMOUNT);
         vm.stopPrank();
 
         // usdc distribution
