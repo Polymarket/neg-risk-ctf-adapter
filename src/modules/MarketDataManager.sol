@@ -17,6 +17,7 @@ interface IMarketStateManagerEE {
 /// @notice Manages market state on behalf of the NegRiskAdapter
 /// @author Mike Shrieve(mike@polymarket.com)
 abstract contract MarketStateManager is IMarketStateManagerEE {
+    // _marketId => marketData
     mapping(bytes32 => MarketData) internal marketData;
 
     /*//////////////////////////////////////////////////////////////
