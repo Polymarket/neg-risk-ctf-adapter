@@ -178,11 +178,11 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     }
 
     function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes calldata _data) external {
-        if (_from == msg.sender || ctf.isApprovedForAll(_from, msg.sender)) {
-            return ctf.safeTransferFrom(_from, _to, _id, _value, _data);
+        if (_from != msg.sender && !ctf.isApprovedForAll(_from, msg.sender)) {
+            revert NotApprovedForAll();
         }
 
-        revert NotApprovedForAll();
+        return ctf.safeTransferFrom(_from, _to, _id, _value, _data);
     }
 
     function safeBatchTransferFrom(
@@ -192,11 +192,11 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         uint256[] calldata _values,
         bytes calldata _data
     ) external {
-        if (_from == msg.sender || ctf.isApprovedForAll(_from, msg.sender)) {
-            return ctf.safeBatchTransferFrom(_from, _to, _ids, _values, _data);
+        if (_from != msg.sender && !ctf.isApprovedForAll(_from, msg.sender)) {
+            revert NotApprovedForAll();
         }
 
-        revert NotApprovedForAll();
+        return ctf.safeBatchTransferFrom(_from, _to, _ids, _values, _data);
     }
 
     /*//////////////////////////////////////////////////////////////

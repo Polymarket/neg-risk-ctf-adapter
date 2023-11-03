@@ -81,7 +81,7 @@ contract NegRiskAdapter_ERC1155Operations_Test is NegRiskAdapter_SetUp, StorageH
         assertEq(ctf.balanceOf(brian, _id), _value);
     }
 
-    function test_ERC1155Operations_authorizedSafeBatchTransferFrom(uint256 _id, uint256 _value) public {
+    function test_ERC1155Operations_authorizedSafeBatchTransferFrom() public {
         uint256[] memory ids = new uint256[](8);
         uint256[] memory values = new uint256[](8);
 
