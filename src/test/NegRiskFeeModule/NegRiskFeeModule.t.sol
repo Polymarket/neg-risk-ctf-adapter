@@ -26,6 +26,8 @@ contract NegRiskFeeModule_Test is NegRiskFeeModuleTestHelper {
 
         vm.prank(operator.addr);
         IFeeModule(negRiskFeeModule).withdrawFees(alice.addr, _id, _amount);
+
+        assertEq(IConditionalTokens(ctf).balanceOf(alice.addr, _id), _amount);
     }
 
     function test_NegRiskFeeModule_matchOrders_buySell() public {

@@ -116,6 +116,17 @@ contract NegRiskAdapter_ERC1155Operations_Test is NegRiskAdapter_SetUp, StorageH
         nrAdapter.safeTransferFrom(alice, brian, _id, _value, "");
     }
 
+    function test_revert_ERC1155Operations_unauthorizedSafeTransferFrom2(uint256 _id, uint256 _value) public {
+        _dealERC1155(address(ctf), alice, _id, _value);
+
+        vm.prank(alice);
+        ctf.setApprovalForAll(address(brian), true);
+
+        vm.expectRevert("ERC1155: need operator approval for 3rd party transfers.");
+        vm.prank(brian);
+        nrAdapter.safeTransferFrom(alice, brian, _id, _value, "");
+    }
+
     function test_revert_ERC1155Operations_unauthorizedSafeBatchTransferFrom() public {
         uint256[] memory ids = new uint256[](8);
         uint256[] memory values = new uint256[](8);
