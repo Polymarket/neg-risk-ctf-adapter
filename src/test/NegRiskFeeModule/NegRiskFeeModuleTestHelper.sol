@@ -4,17 +4,18 @@ pragma solidity ^0.8.13;
 import {console, Test, Vm} from "../../../lib/forge-std/src/Test.sol";
 import {Side, SignatureType} from "../../../lib/ctf-exchange/src/exchange/libraries/OrderStructs.sol";
 import {NegRiskAdapter} from "../../NegRiskAdapter.sol";
-import {IConditionalTokens, ICTFExchange, IERC20} from "../../interfaces/index.sol";
+import {IConditionalTokens, ICTFExchange, IERC20, IFeeModule} from "../../interfaces/index.sol";
 import {AddressLib} from "../../dev/libraries/AddressLib.sol";
 import {DeployLib} from "../../dev/libraries/DeployLib.sol";
 import {OrderHelper} from "../../dev/OrderHelper.sol";
 import {StorageHelper} from "../../dev/StorageHelper.sol";
 import {USDC} from "../mock/USDC.sol";
 
-contract NegRiskCtfExchangeTestHelper is Test, OrderHelper, StorageHelper {
+contract NegRiskFeeModuleTestHelper is Test, StorageHelper, OrderHelper {
     address immutable ctf;
     address immutable negRiskAdapter;
     address immutable negRiskCtfExchange;
+    address immutable negRiskFeeModule;
     address immutable usdc;
 
     Vm.Wallet alice;
@@ -52,6 +53,7 @@ contract NegRiskCtfExchangeTestHelper is Test, OrderHelper, StorageHelper {
             _proxyFactory: address(0),
             _safeFactory: address(0)
         });
+        negRiskFeeModule = DeployLib.deployNegRiskFeeModule(negRiskCtfExchange, negRiskAdapter, ctf);
 
         partition = new uint256[](2);
         partition[0] = 1;
@@ -59,8 +61,13 @@ contract NegRiskCtfExchangeTestHelper is Test, OrderHelper, StorageHelper {
 
         _setAdmin(negRiskCtfExchange, admin.addr);
         _setOperator(negRiskCtfExchange, operator.addr);
+        _setOperator(negRiskCtfExchange, negRiskFeeModule);
+
+        IFeeModule(negRiskFeeModule).admins(address(this));
+        _setAdmin(negRiskFeeModule, operator.addr);
 
         ICTFExchange(negRiskCtfExchange).renounceAdminRole();
         ICTFExchange(negRiskCtfExchange).renounceOperatorRole();
+        IFeeModule(negRiskFeeModule).renounceAdmin();
     }
 }

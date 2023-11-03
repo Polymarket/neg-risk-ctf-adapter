@@ -43,4 +43,17 @@ library DeployLib {
         vm.label(deployment, "NegRiskCtfExchange");
         return deployment;
     }
+
+    /// @dev this will not correctly set the initial admin
+    ///      _deployCode will not correctly use the msg.sender
+    function deployNegRiskFeeModule(address _negRiskCtfExchange, address _negRiskAdapter, address _ctf)
+        public
+        returns (address)
+    {
+        address deployment = _deployCode(
+            "out/NegRiskFeeModule.sol/NegRiskFeeModule.json", abi.encode(_negRiskCtfExchange, _negRiskAdapter, _ctf)
+        );
+        vm.label(deployment, "NegRiskFeeModule");
+        return deployment;
+    }
 }

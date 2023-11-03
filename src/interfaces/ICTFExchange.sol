@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.15;
 
 interface ICTFExchange {
     event FeeCharged(address indexed receiver, uint256 tokenId, uint256 amount);
