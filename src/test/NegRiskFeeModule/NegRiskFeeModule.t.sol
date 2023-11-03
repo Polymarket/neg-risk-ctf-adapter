@@ -20,6 +20,14 @@ contract NegRiskFeeModule_Test is NegRiskFeeModuleTestHelper {
         ICTFExchange(negRiskCtfExchange).registerToken(yesPositionId, noPositionId, conditionId);
     }
 
+    function test_NegRiskFeeModule_withdrawFees(uint256 _id, uint256 _amount) public {
+        vm.assume(_id > 0);
+        _dealERC1155(ctf, negRiskFeeModule, _id, _amount);
+
+        vm.prank(operator.addr);
+        IFeeModule(negRiskFeeModule).withdrawFees(alice.addr, _id, _amount);
+    }
+
     function test_NegRiskFeeModule_matchOrders_buySell() public {
         uint256 USDC_AMOUNT = 50_000_000;
         uint256 TOKEN_AMOUNT = 100_000_000;
