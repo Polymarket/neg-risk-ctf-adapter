@@ -21,7 +21,6 @@ contract OrderHelper is Script {
     ) internal view returns (ICTFExchange.Order memory) {
         address maker = vm.addr(_pk);
         ICTFExchange.Order memory order = _createOrder(maker, _tokenId, _makerAmount, _takerAmount, _side);
-        // ICTFExchange.Order memory order = abi.decode(abi.encode(order_), (ICTFExchange.Order));
         order.signature = _signMessage(_pk, ICTFExchange(_exchange).hashOrder(order));
         return order;
     }
