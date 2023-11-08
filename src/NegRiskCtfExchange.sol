@@ -9,5 +9,6 @@ contract NegRiskCtfExchange is CTFExchange {
         CTFExchange(_collateral, _negRiskAdapter, _proxyFactory, _safeFactory)
     {
         IConditionalTokens(_ctf).setApprovalForAll(_negRiskAdapter, true);
+        IConditionalTokens(_ctf).setApprovalForAll(address(this), true);
     }
 }

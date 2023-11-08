@@ -45,6 +45,7 @@ contract NegRiskFeeModuleTestHelper is Test, StorageHelper, OrderHelper {
 
         ctf = DeployLib.deployConditionalTokens();
         usdc = address(new USDC());
+
         negRiskAdapter = address(new NegRiskAdapter(ctf, usdc, vault));
         negRiskCtfExchange = DeployLib.deployNegRiskCtfExchange({
             _collateral: usdc,
@@ -55,19 +56,32 @@ contract NegRiskFeeModuleTestHelper is Test, StorageHelper, OrderHelper {
         });
         negRiskFeeModule = DeployLib.deployNegRiskFeeModule(negRiskCtfExchange, negRiskAdapter, ctf);
 
+        /// NEG RISK ADAPTER
+        // set initial admin
+        NegRiskAdapter(negRiskAdapter).addAdmin(admin.addr);
+        // allow negRiskCtfExchange to transfer using the NegRiskAdapter
+        NegRiskAdapter(negRiskAdapter).addAdmin(negRiskCtfExchange);
+        // allow negRiskFeeModule to transfer using the NegRiskAdapter
+        NegRiskAdapter(negRiskAdapter).addAdmin(negRiskFeeModule);
+
+        /// NEG RISK CTF EXCHANGE
+        // set initial admin
+        ICTFExchange(negRiskCtfExchange).addAdmin(admin.addr);
+        // set operator as operator
+        ICTFExchange(negRiskCtfExchange).addOperator(operator.addr);
+        // set fee module as operator
+        ICTFExchange(negRiskCtfExchange).addOperator(negRiskFeeModule);
+        /// NEG RISK FEE MODULE
+        IFeeModule(negRiskFeeModule).addAdmin(operator.addr);
+
+        /// RENOUNCE
+        NegRiskAdapter(negRiskAdapter).renounceAdmin();
+        IFeeModule(negRiskFeeModule).renounceAdmin();
+        ICTFExchange(negRiskCtfExchange).renounceAdminRole();
+        ICTFExchange(negRiskCtfExchange).renounceOperatorRole();
+
         partition = new uint256[](2);
         partition[0] = 1;
         partition[1] = 2;
-
-        _setAdmin(negRiskCtfExchange, admin.addr);
-        _setOperator(negRiskCtfExchange, operator.addr);
-        _setOperator(negRiskCtfExchange, negRiskFeeModule);
-
-        IFeeModule(negRiskFeeModule).admins(address(this));
-        _setAdmin(negRiskFeeModule, operator.addr);
-
-        ICTFExchange(negRiskCtfExchange).renounceAdminRole();
-        ICTFExchange(negRiskCtfExchange).renounceOperatorRole();
-        IFeeModule(negRiskFeeModule).renounceAdmin();
     }
 }

@@ -16,15 +16,19 @@ contract NegRiskAdapter_SetUp is TestHelper, INegRiskAdapterEE {
     IConditionalTokens ctf;
     address oracle;
     address vault;
+    address admin;
 
     uint256 constant FEE_BIPS_MAX = 10_000;
 
     function setUp() public virtual {
+        admin = vm.createWallet("admin").addr;
         vault = vm.createWallet("vault").addr;
         oracle = vm.createWallet("oracle").addr;
         ctf = IConditionalTokens(DeployLib.deployConditionalTokens());
         usdc = new USDC();
         nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), vault);
+        NegRiskAdapter(nrAdapter).addAdmin(admin);
+        NegRiskAdapter(nrAdapter).renounceAdmin();
         wcol = nrAdapter.wcol();
     }
 }

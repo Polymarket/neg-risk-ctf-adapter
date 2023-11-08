@@ -44,6 +44,7 @@ contract NegRiskCtfExchangeTestHelper is Test, OrderHelper, StorageHelper {
 
         ctf = DeployLib.deployConditionalTokens();
         usdc = address(new USDC());
+
         negRiskAdapter = address(new NegRiskAdapter(ctf, usdc, vault));
         negRiskCtfExchange = DeployLib.deployNegRiskCtfExchange({
             _collateral: usdc,
@@ -53,14 +54,24 @@ contract NegRiskCtfExchangeTestHelper is Test, OrderHelper, StorageHelper {
             _safeFactory: address(0)
         });
 
+        // set initial admin
+        NegRiskAdapter(negRiskAdapter).addAdmin(admin.addr);
+        // allow negRiskCtfExchange to transfer using the NegRiskAdapter
+        NegRiskAdapter(negRiskAdapter).addAdmin(negRiskCtfExchange);
+        // renounce address(this) as admin
+        NegRiskAdapter(negRiskAdapter).renounceAdmin();
+
+        // set initial admin
+        ICTFExchange(negRiskCtfExchange).addAdmin(admin.addr);
+        // set operator
+        ICTFExchange(negRiskCtfExchange).addOperator(operator.addr);
+
+        // renounce address(this) as admin and operator
+        ICTFExchange(negRiskCtfExchange).renounceAdminRole();
+        ICTFExchange(negRiskCtfExchange).renounceOperatorRole();
+
         partition = new uint256[](2);
         partition[0] = 1;
         partition[1] = 2;
-
-        _setAdmin(negRiskCtfExchange, admin.addr);
-        _setOperator(negRiskCtfExchange, operator.addr);
-
-        ICTFExchange(negRiskCtfExchange).renounceAdminRole();
-        ICTFExchange(negRiskCtfExchange).renounceOperatorRole();
     }
 }

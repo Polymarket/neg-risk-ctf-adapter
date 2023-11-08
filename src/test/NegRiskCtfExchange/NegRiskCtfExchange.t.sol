@@ -39,8 +39,7 @@ contract NegRiskCtfExchange_Test is NegRiskCtfExchangeTestHelper {
         _dealERC20(usdc, carly.addr, TOKEN_AMOUNT);
         IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
         INegRiskAdapter(negRiskAdapter).splitPosition(usdc, bytes32(0), conditionId, partition, TOKEN_AMOUNT);
-        IConditionalTokens(ctf).setApprovalForAll(negRiskAdapter, true);
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, operator.addr, yesPositionId, TOKEN_AMOUNT, "");
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, operator.addr, yesPositionId, TOKEN_AMOUNT, "");
         vm.stopPrank();
 
         // deal alice USDC
@@ -93,8 +92,7 @@ contract NegRiskCtfExchange_Test is NegRiskCtfExchangeTestHelper {
         _dealERC20(usdc, carly.addr, TOKEN_AMOUNT);
         IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
         INegRiskAdapter(negRiskAdapter).splitPosition(usdc, bytes32(0), conditionId, partition, TOKEN_AMOUNT);
-        IConditionalTokens(ctf).setApprovalForAll(negRiskAdapter, true);
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, alice.addr, yesPositionId, TOKEN_AMOUNT, "");
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, alice.addr, yesPositionId, TOKEN_AMOUNT, "");
         vm.stopPrank();
 
         // deal operator USDC
@@ -147,11 +145,10 @@ contract NegRiskCtfExchange_Test is NegRiskCtfExchangeTestHelper {
         _dealERC20(usdc, carly.addr, TOKEN_AMOUNT);
         IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
         INegRiskAdapter(negRiskAdapter).splitPosition(usdc, bytes32(0), conditionId, partition, TOKEN_AMOUNT);
-        IConditionalTokens(ctf).setApprovalForAll(negRiskAdapter, true);
+        // transfer yes tokens to brian
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, brian.addr, yesPositionId, TOKEN_AMOUNT, "");
         // deal USDC to alice
         _dealERC20(usdc, alice.addr, USDC_AMOUNT);
-        // transfer yes tokens to brian
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, brian.addr, yesPositionId, TOKEN_AMOUNT, "");
         vm.stopPrank();
 
         // sign alice order
@@ -222,11 +219,10 @@ contract NegRiskCtfExchange_Test is NegRiskCtfExchangeTestHelper {
         _dealERC20(usdc, carly.addr, TOKEN_AMOUNT);
         IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
         INegRiskAdapter(negRiskAdapter).splitPosition(usdc, bytes32(0), conditionId, partition, TOKEN_AMOUNT);
-        IConditionalTokens(ctf).setApprovalForAll(negRiskAdapter, true);
+        // transfer yes tokens to brian
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, brian.addr, yesPositionId, TOKEN_AMOUNT, "");
         // deal USDC to alice
         _dealERC20(usdc, alice.addr, USDC_AMOUNT);
-        // transfer yes tokens to brian
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, brian.addr, yesPositionId, TOKEN_AMOUNT, "");
         vm.stopPrank();
 
         // sign alice order
@@ -362,11 +358,10 @@ contract NegRiskCtfExchange_Test is NegRiskCtfExchangeTestHelper {
         _dealERC20(usdc, carly.addr, TOKEN_AMOUNT);
         IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
         INegRiskAdapter(negRiskAdapter).splitPosition(usdc, bytes32(0), conditionId, partition, TOKEN_AMOUNT);
-        IConditionalTokens(ctf).setApprovalForAll(negRiskAdapter, true);
         // transfer yes tokens to alice
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, alice.addr, yesPositionId, TOKEN_AMOUNT, "");
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, alice.addr, yesPositionId, TOKEN_AMOUNT, "");
         // transfer no tokens to brian
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, brian.addr, noPositionId, TOKEN_AMOUNT, "");
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, brian.addr, noPositionId, TOKEN_AMOUNT, "");
         vm.stopPrank();
 
         // sign alice order

@@ -11,10 +11,12 @@ import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
 import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
+import {Auth} from "src/modules/Auth.sol";
+import {IAuthEE} from "src/modules/interfaces/IAuth.sol";
 
 /// @title INegRiskAdapterEE
 /// @notice NegRiskAdapter Errors and Events
-interface INegRiskAdapterEE is IMarketStateManagerEE {
+interface INegRiskAdapterEE is IMarketStateManagerEE, IAuthEE {
     error InvalidIndexSet();
     error LengthMismatch();
     error UnexpectedCollateralToken();
@@ -38,7 +40,7 @@ interface INegRiskAdapterEE is IMarketStateManagerEE {
 /// @notice And the adapter allows for the conversion of a set of no positions, to collateral plus the set of
 /// complementary yes positions
 /// @author Mike Shrieve (mike@polymarket.com)
-contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE {
+contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE, Auth {
     using SafeTransferLib for ERC20;
 
     /*//////////////////////////////////////////////////////////////
@@ -177,27 +179,30 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
         return ctf.balanceOfBatch(_owners, _ids);
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes calldata _data) external {
-        if (_from != msg.sender && !ctf.isApprovedForAll(_from, msg.sender)) {
+    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes calldata _data)
+        external
+        onlyAdmin
+    {
+        if (!ctf.isApprovedForAll(_from, msg.sender)) {
             revert NotApprovedForAll();
         }
 
         return ctf.safeTransferFrom(_from, _to, _id, _value, _data);
     }
 
-    function safeBatchTransferFrom(
-        address _from,
-        address _to,
-        uint256[] calldata _ids,
-        uint256[] calldata _values,
-        bytes calldata _data
-    ) external {
-        if (_from != msg.sender && !ctf.isApprovedForAll(_from, msg.sender)) {
-            revert NotApprovedForAll();
-        }
+    // function safeBatchTransferFrom(
+    //     address _from,
+    //     address _to,
+    //     uint256[] calldata _ids,
+    //     uint256[] calldata _values,
+    //     bytes calldata _data
+    // ) external onlyAdmin {
+    //     if (!ctf.isApprovedForAll(_from, msg.sender)) {
+    //         revert NotApprovedForAll();
+    //     }
 
-        return ctf.safeBatchTransferFrom(_from, _to, _ids, _values, _data);
-    }
+    //     return ctf.safeBatchTransferFrom(_from, _to, _ids, _values, _data);
+    // }
 
     /*//////////////////////////////////////////////////////////////
                             REDEEM POSITION
@@ -408,7 +413,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev internal function to avoid stack to deep in convertPositions
+    /// @dev internal function to avoid stack too deep in convertPositions
     function _splitPosition(bytes32 _conditionId, uint256 _amount) internal {
         ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
     }

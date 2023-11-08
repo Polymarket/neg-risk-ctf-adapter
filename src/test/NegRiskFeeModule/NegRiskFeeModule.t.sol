@@ -54,7 +54,7 @@ contract NegRiskFeeModule_Test is NegRiskFeeModuleTestHelper {
         // deal USDC to alice
         _dealERC20(usdc, alice.addr, USDC_AMOUNT);
         // transfer yes tokens to brian
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, brian.addr, yesPositionId, TOKEN_AMOUNT, "");
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, brian.addr, yesPositionId, TOKEN_AMOUNT, "");
         vm.stopPrank();
 
         // sign alice order
@@ -124,12 +124,12 @@ contract NegRiskFeeModule_Test is NegRiskFeeModuleTestHelper {
         vm.startPrank(carly.addr);
         _dealERC20(usdc, carly.addr, TOKEN_AMOUNT);
         IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
-        INegRiskAdapter(negRiskAdapter).splitPosition(usdc, bytes32(0), conditionId, partition, TOKEN_AMOUNT);
+        IConditionalTokens(negRiskAdapter).splitPosition(usdc, bytes32(0), conditionId, partition, TOKEN_AMOUNT);
         IConditionalTokens(ctf).setApprovalForAll(negRiskAdapter, true);
         // deal USDC to alice
         _dealERC20(usdc, alice.addr, USDC_AMOUNT);
         // transfer yes tokens to brian
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, brian.addr, yesPositionId, TOKEN_AMOUNT, "");
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, brian.addr, yesPositionId, TOKEN_AMOUNT, "");
         vm.stopPrank();
 
         // sign alice order
@@ -265,11 +265,10 @@ contract NegRiskFeeModule_Test is NegRiskFeeModuleTestHelper {
         _dealERC20(usdc, carly.addr, TOKEN_AMOUNT);
         IERC20(usdc).approve(negRiskAdapter, TOKEN_AMOUNT);
         INegRiskAdapter(negRiskAdapter).splitPosition(usdc, bytes32(0), conditionId, partition, TOKEN_AMOUNT);
-        IConditionalTokens(ctf).setApprovalForAll(negRiskAdapter, true);
         // transfer yes tokens to alice
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, alice.addr, yesPositionId, TOKEN_AMOUNT, "");
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, alice.addr, yesPositionId, TOKEN_AMOUNT, "");
         // transfer no tokens to brian
-        INegRiskAdapter(negRiskAdapter).safeTransferFrom(carly.addr, brian.addr, noPositionId, TOKEN_AMOUNT, "");
+        IConditionalTokens(ctf).safeTransferFrom(carly.addr, brian.addr, noPositionId, TOKEN_AMOUNT, "");
         vm.stopPrank();
 
         // sign alice order
