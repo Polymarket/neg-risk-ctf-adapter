@@ -171,14 +171,31 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                            ERC1155 OPERATIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Proxies ERC1155 balanceOf to the CTF
+    /// @param _owner - the owner of the tokens
+    /// @param _id    - the positionId
+    /// @return balance - the owner's balance
     function balanceOf(address _owner, uint256 _id) external view returns (uint256) {
         return ctf.balanceOf(_owner, _id);
     }
 
+    /// @notice Proxies ERC1155 balanceOfBatch to the CTF
+    /// @param _owners - the owners of the tokens
+    /// @param _ids    - the positionIds
+    /// @return balances - the owners' balances
     function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) external view returns (uint256[] memory) {
         return ctf.balanceOfBatch(_owners, _ids);
     }
 
+    /// @notice Proxies ERC1155 safeTransferFrom to the CTF
+    /// @notice Can only be called by an admin
+    /// @notice Requires this contract to be approved for all
+    /// @notice Requires the sender to be approved for all
+    /// @param _from  - the owner of the tokens
+    /// @param _to    - the recipient of the tokens
+    /// @param _id    - the positionId
+    /// @param _value - the amount of tokens to transfer
+    /// @param _data  - the data to pass to the recipient
     function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes calldata _data)
         external
         onlyAdmin
@@ -189,20 +206,6 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
         return ctf.safeTransferFrom(_from, _to, _id, _value, _data);
     }
-
-    // function safeBatchTransferFrom(
-    //     address _from,
-    //     address _to,
-    //     uint256[] calldata _ids,
-    //     uint256[] calldata _values,
-    //     bytes calldata _data
-    // ) external onlyAdmin {
-    //     if (!ctf.isApprovedForAll(_from, msg.sender)) {
-    //         revert NotApprovedForAll();
-    //     }
-
-    //     return ctf.safeBatchTransferFrom(_from, _to, _ids, _values, _data);
-    // }
 
     /*//////////////////////////////////////////////////////////////
                             REDEEM POSITION
