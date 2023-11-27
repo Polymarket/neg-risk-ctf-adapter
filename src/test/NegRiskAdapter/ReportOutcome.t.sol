@@ -90,7 +90,8 @@ contract NegRiskAdapter_ReportOutcome_Test is NegRiskAdapter_SetUp {
     }
 
     function test_revert_reportOutcome_marketNotPrepared(bytes32 _questionId, bool _result) public {
-        // REPORT OUTCOME
+        vm.assume(NegRiskIdLib.getMarketId(_questionId) != marketId);
+
         vm.expectRevert(MarketNotPrepared.selector);
         nrAdapter.reportOutcome(_questionId, _result);
     }

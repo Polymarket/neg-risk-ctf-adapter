@@ -4,7 +4,7 @@ out = "out"
 libs = ["lib"]
 
 optimizer = true
-optimizer_runs = 20_000
+optimizer_runs = 1_000_000
 
 ffi = true
 fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"},{ access = "read", path = "./artifacts/"}, { access = "read", path = "./out/"}]
