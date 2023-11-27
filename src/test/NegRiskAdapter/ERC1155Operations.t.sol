@@ -9,9 +9,7 @@ import {StorageHelper} from "../../dev/StorageHelper.sol";
 /// @title NegRiskAdapter_ERC1155Operations_Test
 /// @notice test the ERC1155 proxy operations of the NegRiskAdapter
 ///         - safeTransferFrom
-///         - safeBatchTransferFrom
 ///         - balanceOf
-///         - balanceOfBatch
 contract NegRiskAdapter_ERC1155Operations_Test is NegRiskAdapter_SetUp, StorageHelper {
     function setUp() public override {
         super.setUp();

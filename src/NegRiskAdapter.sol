@@ -58,7 +58,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    /// @param _ctf  - ConditionalTokens address
+    /// @param _ctf        - ConditionalTokens address
     /// @param _collateral - collateral address
     constructor(address _ctf, address _collateral, address _vault) {
         ctf = IConditionalTokens(_ctf);
@@ -120,7 +120,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
     /// @notice Splits collateral to a complete set of conditional tokens for a single question
     /// @param _conditionId - the conditionId for the question
-    /// @param _amount - the amount of collateral to split
+    /// @param _amount      - the amount of collateral to split
     function splitPosition(bytes32 _conditionId, uint256 _amount) public {
         col.safeTransferFrom(msg.sender, address(this), _amount);
         wcol.wrap(address(this), _amount);
@@ -139,8 +139,8 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @notice Merges a complete set of conditional tokens for a single question to collateral
     /// @notice This function signature is the same as the CTF's mergePositions
     /// @param _collateralToken - the collateral token, must be the same as the adapter's collateral token
-    /// @param _conditionId - the conditionId for the question
-    /// @param _amount - the amount of collateral to merge
+    /// @param _conditionId     - the conditionId for the question
+    /// @param _amount          - the amount of collateral to merge
     function mergePositions(
         address _collateralToken,
         bytes32,
@@ -154,7 +154,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
     /// @notice Merges a complete set of conditional tokens for a single question to collateral
     /// @param _conditionId - the conditionId for the question
-    /// @param _amount - the amount of collateral to merge
+    /// @param _amount      - the amount of collateral to merge
     function mergePositions(bytes32 _conditionId, uint256 _amount) public {
         uint256[] memory positionIds = Helpers.positionIds(address(wcol), _conditionId);
 
@@ -171,16 +171,16 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Proxies ERC1155 balanceOf to the CTF
-    /// @param _owner - the owner of the tokens
-    /// @param _id    - the positionId
+    /// @param _owner   - the owner of the tokens
+    /// @param _id      - the positionId
     /// @return balance - the owner's balance
     function balanceOf(address _owner, uint256 _id) external view returns (uint256) {
         return ctf.balanceOf(_owner, _id);
     }
 
     /// @notice Proxies ERC1155 balanceOfBatch to the CTF
-    /// @param _owners - the owners of the tokens
-    /// @param _ids    - the positionIds
+    /// @param _owners   - the owners of the tokens
+    /// @param _ids      - the positionIds
     /// @return balances - the owners' balances
     function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) external view returns (uint256[] memory) {
         return ctf.balanceOfBatch(_owners, _ids);
@@ -212,7 +212,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
     /// @notice Redeem a set of conditional tokens for collateral
     /// @param _conditionId - conditionId of the conditional tokens to redeem
-    /// @param _amounts - amounts of conditional tokens to redeem
+    /// @param _amounts     - amounts of conditional tokens to redeem
     /// _amounts should always have length 2, with the first element being the amount of yes tokens to redeem and the
     /// second element being the amount of no tokens to redeem
     function redeemPositions(bytes32 _conditionId, uint256[] calldata _amounts) public {
