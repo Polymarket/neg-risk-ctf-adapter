@@ -15,7 +15,7 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
     address oracle;
 
     function setUp() public {
-        oracle = _getAndLabelAddress("oracle");
+        oracle = vm.createWallet("oracle").addr;
         ctf = IConditionalTokens(DeployLib.deployConditionalTokens());
         usdc = new USDC();
     }

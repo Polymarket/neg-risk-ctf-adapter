@@ -3,11 +3,11 @@ pragma solidity ^0.8.15;
 
 import {TestHelper, console} from "src/dev/TestHelper.sol";
 
-import {NegRiskAdapter, INegRiskAdapterEE} from "src/NegRiskAdapter.sol";
-import {WrappedCollateral} from "src/WrappedCollateral.sol";
-import {DeployLib} from "src/dev/libraries/DeployLib.sol";
-import {USDC} from "src/test/mock/USDC.sol";
-import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
+import {NegRiskAdapter, INegRiskAdapterEE} from "../../NegRiskAdapter.sol";
+import {WrappedCollateral} from "../../WrappedCollateral.sol";
+import {DeployLib} from "../../dev/libraries/DeployLib.sol";
+import {USDC} from "../../test/mock/USDC.sol";
+import {IConditionalTokens} from "../../interfaces/IConditionalTokens.sol";
 
 contract NegRiskAdapter_SetUp is TestHelper, INegRiskAdapterEE {
     NegRiskAdapter nrAdapter;
@@ -16,15 +16,19 @@ contract NegRiskAdapter_SetUp is TestHelper, INegRiskAdapterEE {
     IConditionalTokens ctf;
     address oracle;
     address vault;
+    address admin;
 
     uint256 constant FEE_BIPS_MAX = 10_000;
 
     function setUp() public virtual {
-        vault = _getAndLabelAddress("vault");
-        oracle = _getAndLabelAddress("oracle");
+        admin = vm.createWallet("admin").addr;
+        vault = vm.createWallet("vault").addr;
+        oracle = vm.createWallet("oracle").addr;
         ctf = IConditionalTokens(DeployLib.deployConditionalTokens());
         usdc = new USDC();
         nrAdapter = new NegRiskAdapter(address(ctf), address(usdc), vault);
+        NegRiskAdapter(nrAdapter).addAdmin(admin);
+        NegRiskAdapter(nrAdapter).renounceAdmin();
         wcol = nrAdapter.wcol();
     }
 }

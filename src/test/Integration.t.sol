@@ -27,8 +27,8 @@ contract IntegrationTest is TestHelper {
     address admin;
 
     function setUp() public virtual {
-        vault = _getAndLabelAddress("vault");
-        admin = _getAndLabelAddress("admin");
+        vault = vm.createWallet("vault").addr;
+        admin = vm.createWallet("admin").addr;
 
         ctf = IConditionalTokens(DeployLib.deployConditionalTokens());
         usdc = new USDC();

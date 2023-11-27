@@ -26,4 +26,34 @@ library DeployLib {
         vm.label(deployment, "UmaCtfAdapter");
         return deployment;
     }
+
+    /// @dev this will not correctly set the initial admin and operator
+    ///      _deployCode will not correctly use the msg.sender
+    function deployNegRiskCtfExchange(
+        address _collateral,
+        address _negRiskAdapter,
+        address _ctf,
+        address _proxyFactory,
+        address _safeFactory
+    ) public returns (address) {
+        address deployment = _deployCode(
+            "out/NegRiskCtfExchange.sol/NegRiskCtfExchange.json",
+            abi.encode(_collateral, _ctf, _negRiskAdapter, _proxyFactory, _safeFactory)
+        );
+        vm.label(deployment, "NegRiskCtfExchange");
+        return deployment;
+    }
+
+    /// @dev this will not correctly set the initial admin
+    ///      _deployCode will not correctly use the msg.sender
+    function deployNegRiskFeeModule(address _negRiskCtfExchange, address _negRiskAdapter, address _ctf)
+        public
+        returns (address)
+    {
+        address deployment = _deployCode(
+            "out/NegRiskFeeModule.sol/NegRiskFeeModule.json", abi.encode(_negRiskCtfExchange, _negRiskAdapter, _ctf)
+        );
+        vm.label(deployment, "NegRiskFeeModule");
+        return deployment;
+    }
 }

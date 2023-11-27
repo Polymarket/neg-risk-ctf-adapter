@@ -4,21 +4,23 @@ pragma solidity 0.8.19;
 import {ERC1155TokenReceiver} from "lib/solmate/src/tokens/ERC1155.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
-
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {MarketData, MarketStateManager, IMarketStateManagerEE} from "src/modules/MarketDataManager.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
 import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
+import {Auth} from "src/modules/Auth.sol";
+import {IAuthEE} from "src/modules/interfaces/IAuth.sol";
 
 /// @title INegRiskAdapterEE
 /// @notice NegRiskAdapter Errors and Events
-interface INegRiskAdapterEE is IMarketStateManagerEE {
+interface INegRiskAdapterEE is IMarketStateManagerEE, IAuthEE {
     error InvalidIndexSet();
     error LengthMismatch();
     error UnexpectedCollateralToken();
     error NoConvertiblePositions();
+    error NotApprovedForAll();
 
     event MarketPrepared(bytes32 indexed marketId, address indexed oracle, uint256 feeBips, bytes data);
     event QuestionPrepared(bytes32 indexed marketId, bytes32 indexed questionId, uint256 index, bytes data);
@@ -37,7 +39,7 @@ interface INegRiskAdapterEE is IMarketStateManagerEE {
 /// @notice And the adapter allows for the conversion of a set of no positions, to collateral plus the set of
 /// complementary yes positions
 /// @author Mike Shrieve (mike@polymarket.com)
-contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE {
+contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAdapterEE, Auth {
     using SafeTransferLib for ERC20;
 
     /*//////////////////////////////////////////////////////////////
@@ -56,7 +58,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    /// @param _ctf  - ConditionalTokens address
+    /// @param _ctf        - ConditionalTokens address
     /// @param _collateral - collateral address
     constructor(address _ctf, address _collateral, address _vault) {
         ctf = IConditionalTokens(_ctf);
@@ -118,7 +120,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
     /// @notice Splits collateral to a complete set of conditional tokens for a single question
     /// @param _conditionId - the conditionId for the question
-    /// @param _amount - the amount of collateral to split
+    /// @param _amount      - the amount of collateral to split
     function splitPosition(bytes32 _conditionId, uint256 _amount) public {
         col.safeTransferFrom(msg.sender, address(this), _amount);
         wcol.wrap(address(this), _amount);
@@ -137,8 +139,8 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     /// @notice Merges a complete set of conditional tokens for a single question to collateral
     /// @notice This function signature is the same as the CTF's mergePositions
     /// @param _collateralToken - the collateral token, must be the same as the adapter's collateral token
-    /// @param _conditionId - the conditionId for the question
-    /// @param _amount - the amount of collateral to merge
+    /// @param _conditionId     - the conditionId for the question
+    /// @param _amount          - the amount of collateral to merge
     function mergePositions(
         address _collateralToken,
         bytes32,
@@ -152,7 +154,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
 
     /// @notice Merges a complete set of conditional tokens for a single question to collateral
     /// @param _conditionId - the conditionId for the question
-    /// @param _amount - the amount of collateral to merge
+    /// @param _amount      - the amount of collateral to merge
     function mergePositions(bytes32 _conditionId, uint256 _amount) public {
         uint256[] memory positionIds = Helpers.positionIds(address(wcol), _conditionId);
 
@@ -165,12 +167,52 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
     }
 
     /*//////////////////////////////////////////////////////////////
+                           ERC1155 OPERATIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Proxies ERC1155 balanceOf to the CTF
+    /// @param _owner   - the owner of the tokens
+    /// @param _id      - the positionId
+    /// @return balance - the owner's balance
+    function balanceOf(address _owner, uint256 _id) external view returns (uint256) {
+        return ctf.balanceOf(_owner, _id);
+    }
+
+    /// @notice Proxies ERC1155 balanceOfBatch to the CTF
+    /// @param _owners   - the owners of the tokens
+    /// @param _ids      - the positionIds
+    /// @return balances - the owners' balances
+    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids) external view returns (uint256[] memory) {
+        return ctf.balanceOfBatch(_owners, _ids);
+    }
+
+    /// @notice Proxies ERC1155 safeTransferFrom to the CTF
+    /// @notice Can only be called by an admin
+    /// @notice Requires this contract to be approved for all
+    /// @notice Requires the sender to be approved for all
+    /// @param _from  - the owner of the tokens
+    /// @param _to    - the recipient of the tokens
+    /// @param _id    - the positionId
+    /// @param _value - the amount of tokens to transfer
+    /// @param _data  - the data to pass to the recipient
+    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _value, bytes calldata _data)
+        external
+        onlyAdmin
+    {
+        if (!ctf.isApprovedForAll(_from, msg.sender)) {
+            revert NotApprovedForAll();
+        }
+
+        return ctf.safeTransferFrom(_from, _to, _id, _value, _data);
+    }
+
+    /*//////////////////////////////////////////////////////////////
                             REDEEM POSITION
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Redeem a set of conditional tokens for collateral
     /// @param _conditionId - conditionId of the conditional tokens to redeem
-    /// @param _amounts - amounts of conditional tokens to redeem
+    /// @param _amounts     - amounts of conditional tokens to redeem
     /// _amounts should always have length 2, with the first element being the amount of yes tokens to redeem and the
     /// second element being the amount of no tokens to redeem
     function redeemPositions(bytes32 _conditionId, uint256[] calldata _amounts) public {
@@ -373,7 +415,7 @@ contract NegRiskAdapter is ERC1155TokenReceiver, MarketStateManager, INegRiskAda
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev internal function to avoid stack to deep in convertPositions
+    /// @dev internal function to avoid stack too deep in convertPositions
     function _splitPosition(bytes32 _conditionId, uint256 _amount) internal {
         ctf.splitPosition(address(wcol), bytes32(0), _conditionId, Helpers.partition(), _amount);
     }

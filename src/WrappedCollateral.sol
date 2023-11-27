@@ -64,8 +64,8 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
 
     /// @notice Wraps the specified amount of tokens
     /// @notice Can only be called by the owner
-    /// @param _to The address to send the wrapped tokens to
-    /// @param _amount The amount of tokens to wrap
+    /// @param _to     - the address to send the wrapped tokens to
+    /// @param _amount - the amount of tokens to wrap
     function wrap(address _to, uint256 _amount) external onlyOwner {
         ERC20(underlying).safeTransferFrom(msg.sender, address(this), _amount);
         _mint(_to, _amount);
@@ -73,22 +73,22 @@ contract WrappedCollateral is IWrappedCollateralEE, ERC20 {
 
     /// @notice Burns the specified amount of tokens
     /// @notice Can only be called by the owner
-    /// @param _amount The amount of tokens to burn
+    /// @param _amount - the amount of tokens to burn
     function burn(uint256 _amount) external onlyOwner {
         _burn(msg.sender, _amount);
     }
 
     /// @notice Mints the specified amount of tokens
     /// @notice Can only be called by the owner
-    /// @param _amount The amount of tokens to mint
+    /// @param _amount - the amount of tokens to mint
     function mint(uint256 _amount) external onlyOwner {
         _mint(msg.sender, _amount);
     }
 
     /// @notice Releases the specified amount of the underlying token
     /// @notice Can only be called by the owner
-    /// @param _to The address to send the released tokens to
-    /// @param _amount The amount of tokens to release
+    /// @param _to     - the address to send the released tokens to
+    /// @param _amount - the amount of tokens to release
     function release(address _to, uint256 _amount) external onlyOwner {
         ERC20(underlying).safeTransfer(_to, _amount);
     }

@@ -47,7 +47,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
     NegRiskAdapter public immutable nrAdapter;
     address public oracle;
-    uint256 public constant DELAY_PERIOD = 12 hours;
+    uint256 public constant DELAY_PERIOD = 1 hours;
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
     mapping(bytes32 _questionId => bool) public results;
@@ -91,8 +91,8 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Prepares a market on the NegRiskAdapter
-    /// @param _feeBips - the market's fee rate out of 10_000
-    /// @param _data - the market metadata to be passed to the NegRiskAdapter
+    /// @param _feeBips  - the market's fee rate out of 10_000
+    /// @param _data     - the market metadata to be passed to the NegRiskAdapter
     /// @return marketId - the market id
     function prepareMarket(uint256 _feeBips, bytes calldata _data) external onlyAdmin returns (bytes32) {
         bytes32 marketId = nrAdapter.prepareMarket(_feeBips, _data);
@@ -107,9 +107,10 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     /// @notice Prepares a question on the NegRiskAdapter
     /// @notice OnlyAdmin
     /// @notice Only one question can be prepared per requestId
-    /// @param _marketId - the id of the market in which to prepare the question
-    /// @param _data - the question metadata to be passed to the NegRiskAdapter
-    /// @param _requestId - the question's oracle request id
+    /// @param _marketId   - the id of the market in which to prepare the question
+    /// @param _data       - the question metadata to be passed to the NegRiskAdapter
+    /// @param _requestId  - the question's oracle request id
+    /// @return questionId - the resulting question id
     function prepareQuestion(bytes32 _marketId, bytes calldata _data, bytes32 _requestId)
         external
         onlyAdmin
@@ -136,7 +137,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     /// @notice Only one report can be made per question
     /// @notice Sets the boolean result and reportedAt timestamp for the question
     /// @param _requestId - the question's oracle request id
-    /// @param _payouts - the payouts to be reported, [1,0] if true, [0,1] if false, any other payouts are invalid
+    /// @param _payouts   - the payouts to be reported, [1,0] if true, [0,1] if false, any other payouts are invalid
     function reportPayouts(bytes32 _requestId, uint256[] calldata _payouts) external onlyOracle {
         if (_payouts.length != 2) {
             revert InvalidPayouts();
@@ -211,6 +212,8 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
     /// @notice Resolves a flagged question on the NegRiskAdapter
     /// @notice OnlyAdmin
     /// @notice A flagged question can only be resolved if the delay period has passed since the question was flagged
+    /// @param _questionId - the id of the question to be resolved
+    /// @param _result     - the boolean result of the question
     function emergencyResolveQuestion(bytes32 _questionId, bool _result) external onlyAdmin {
         uint256 flaggedAt_ = flaggedAt[_questionId];
 

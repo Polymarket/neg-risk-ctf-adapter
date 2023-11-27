@@ -7,3 +7,9 @@
 [submodule "lib/forge-gas-snapshot"]
 	path = lib/forge-gas-snapshot
 	url = https://github.com/marktoda/forge-gas-snapshot
+[submodule "lib/ctf-exchange"]
+	path = lib/ctf-exchange
+	url = https://github.com/Polymarket/ctf-exchange
+[submodule "lib/exchange-fee-module"]
+	path = lib/exchange-fee-module
+	url = https://github.com/Polymarket/exchange-fee-module
