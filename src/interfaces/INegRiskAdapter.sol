@@ -1,4 +1,5 @@
-pragma solidity ^0.8.10;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.15;
 
 interface INegRiskAdapter {
     event MarketPrepared(bytes32 indexed marketId, address indexed oracle, uint256 feeBips, bytes data);

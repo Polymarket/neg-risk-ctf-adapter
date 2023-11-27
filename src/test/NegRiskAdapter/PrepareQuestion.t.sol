@@ -15,17 +15,18 @@ contract NegRiskAdapter_PrepareQuestion_Test is NegRiskAdapter_SetUp {
 
         while (i < 255) {
             bytes memory data = abi.encodePacked("question", i);
-            bytes32 questionId = NegRiskIdLib.getQuestionId(marketId, i);
-            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+            bytes32 expectedQuestionId = NegRiskIdLib.getQuestionId(marketId, i);
+            bytes32 conditionId = nrAdapter.getConditionId(expectedQuestionId);
 
             // events
             vm.expectEmit();
-            emit QuestionPrepared(marketId, questionId, i, data);
+            emit QuestionPrepared(marketId, expectedQuestionId, i, data);
 
             // prepare question
-            nrAdapter.prepareQuestion(marketId, data);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
 
             // assertions
+            assertEq(questionId, expectedQuestionId);
             assertEq(NegRiskIdLib.getQuestionId(marketId, i), bytes32(uint256(marketId) + i));
             assertEq(nrAdapter.getQuestionCount(marketId), i + 1);
             assertEq(ctf.getOutcomeSlotCount(conditionId), 2);

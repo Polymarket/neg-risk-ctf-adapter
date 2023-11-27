@@ -8,11 +8,15 @@ contract NegRiskAdapter_PrepareMarket_Test is NegRiskAdapter_SetUp {
     function test_prepareMarket(uint256 _feeBips, bytes memory _data) public {
         _feeBips = bound(_feeBips, 0, FEE_BIPS_MAX);
 
+        bytes32 expectedMarketId = NegRiskIdLib.getMarketId(oracle, _feeBips, _data);
+
         vm.expectEmit();
-        emit MarketPrepared(NegRiskIdLib.getMarketId(oracle, _feeBips, _data), oracle, _feeBips, _data);
+        emit MarketPrepared(expectedMarketId, oracle, _feeBips, _data);
+
         vm.prank(oracle);
         bytes32 marketId = nrAdapter.prepareMarket(_feeBips, _data);
 
+        assertEq(marketId, expectedMarketId);
         assertEq(nrAdapter.getFeeBips(marketId), _feeBips);
         assertEq(nrAdapter.getOracle(marketId), oracle);
         assertEq(nrAdapter.getQuestionCount(marketId), 0);
