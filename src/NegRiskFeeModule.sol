@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity 0.8.15;
 
 import {FeeModule, IExchange} from "../lib/exchange-fee-module/src/FeeModule.sol";
 import {IConditionalTokens} from "./interfaces/IConditionalTokens.sol";
