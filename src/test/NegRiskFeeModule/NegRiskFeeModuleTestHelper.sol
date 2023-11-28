@@ -41,6 +41,11 @@ contract NegRiskFeeModuleTestHelper is Test, StorageHelper, OrderHelper {
         brian = vm.createWallet("brian");
         carly = vm.createWallet("carly");
 
+        partition = new uint256[](2);
+        partition[0] = 1;
+        partition[1] = 2;
+
+        vm.startPrank(admin.addr);
         address vault = vm.createWallet("vault").addr;
 
         ctf = DeployLib.deployConditionalTokens();
@@ -57,16 +62,12 @@ contract NegRiskFeeModuleTestHelper is Test, StorageHelper, OrderHelper {
         negRiskFeeModule = DeployLib.deployNegRiskFeeModule(negRiskCtfExchange, negRiskAdapter, ctf);
 
         /// NEG RISK ADAPTER
-        // set initial admin
-        NegRiskAdapter(negRiskAdapter).addAdmin(admin.addr);
         // allow negRiskCtfExchange to transfer using the NegRiskAdapter
         NegRiskAdapter(negRiskAdapter).addAdmin(negRiskCtfExchange);
         // allow negRiskFeeModule to transfer using the NegRiskAdapter
         NegRiskAdapter(negRiskAdapter).addAdmin(negRiskFeeModule);
 
         /// NEG RISK CTF EXCHANGE
-        // set initial admin
-        ICTFExchange(negRiskCtfExchange).addAdmin(admin.addr);
         // set operator as operator
         ICTFExchange(negRiskCtfExchange).addOperator(operator.addr);
         // set fee module as operator
@@ -74,14 +75,6 @@ contract NegRiskFeeModuleTestHelper is Test, StorageHelper, OrderHelper {
         /// NEG RISK FEE MODULE
         IFeeModule(negRiskFeeModule).addAdmin(operator.addr);
 
-        /// RENOUNCE
-        NegRiskAdapter(negRiskAdapter).renounceAdmin();
-        IFeeModule(negRiskFeeModule).renounceAdmin();
-        ICTFExchange(negRiskCtfExchange).renounceAdminRole();
-        ICTFExchange(negRiskCtfExchange).renounceOperatorRole();
-
-        partition = new uint256[](2);
-        partition[0] = 1;
-        partition[1] = 2;
+        vm.stopPrank();
     }
 }
