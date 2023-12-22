@@ -1,0 +1,24 @@
+{
+  "80001": {
+    "ctf": "0x7D8610E9567d2a6C9FBf66a5A13E9Ba8bb120d43",
+    "negRiskAdapter": "0x9A6930BB811fe3dFE1c35e4502134B38EC54399C",
+    "negRiskCtfExchange": "0x87d1A0DdB4C63a6301916F02090A51a7241571e4",
+    "negRiskFeeModule": "0x311FD94978961EeF4B903519B33B47B506aB6823",
+    "negRiskOperator": "0x1e11B6F114da9B0B86f6E2710e2C4989606ceBe7",
+    "negRiskVault": "0x7f91506c958cE8fb1A7a0A2bd255B22aDeF1053a",
+    "negRiskUmaCtfAdapter": "0x4D002C1b0EaD4636cB200aEbE7729ed0AC871496",
+    "negRiskWrappedCollateral": "0x9deB19a6904d39d2B7ED27aec9d0902701d557D3",
+    "usdc": "0x2e8dcfe708d44ae2e406a1c02dfe2fa13012f961"
+  },
+  "137": {
+    "ctf": "0x4d97dcd97ec945f40cf65f87097ace5ea0476045",
+    "negRiskAdapter": "0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296",
+    "negRiskCtfExchange": "0xC5d563A36AE78145C45a50134d48A1215220f80a",
+    "negRiskFeeModule": "0x78769D50Be1763ed1CA0D5E878D93f05aabff29e",
+    "negRiskOperator": "0x71523d0f655B41E805Cec45b17163f528B59B820",
+    "negRiskVault": "0x7f67327E88c258932D7d8f72950bE0d46975E11D",
+    "negRiskUmaCtfAdapter": "0x2F5e3684cb1F318ec51b00Edba38d79Ac2c0aA9d",
+    "negRiskWrappedCollateral": "0x3A3BD7bb9528E159577F7C2e685CC81A765002E2",
+    "usdc": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
+  }
+}
