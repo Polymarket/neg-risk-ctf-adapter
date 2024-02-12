@@ -13,3 +13,4 @@ fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"},{ access 
 line_length = 120
 wrap_comments = true
 
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config 
