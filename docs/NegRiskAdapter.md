@@ -2,7 +2,7 @@
 
 `NegRiskAdapter` provides an adapter interface for the Gnosis Conditional Tokens Framework (CTF) which allows users to _convert_ collections of NO tokens in mutually-exclusive binary markets into a corresponding position of YES tokens and collateral.
 
-In this contract, _markets_ refer to collections of mutually-exclusive binary conditions, and _questions_ (or their corresponding _positions_) refer to the invidual conditions themselves.
+In this contract, _markets_ refer to collections of mutually-exclusive binary conditions, and _questions_ (or their corresponding _positions_) refer to the individual conditions themselves.
 
 ## Constructor
 
@@ -37,7 +37,7 @@ Note: Overloaded with a version with a signature matching the equivalent functio
 
 Merges complete sets of YES and NO tokens into collateral.
 
-_Unwraps_ the wrapped collateral return from the CTF into the original collateral before returning to the user.
+_Unwraps_ the wrapped collateral returned  from the CTF into the original collateral before returning to the user.
 
 ### Parameters
 
@@ -79,7 +79,7 @@ Supposing that exactly one questions resolves true, these two positions have equ
 
 There is an optional `feeRate` market parameter which exists to implement a fee on the conversion. Collected fees are sent to the `vault` address.
 
-It is necessary to synthetically mint wrapped collateral in order to collateralize the resulting YES tokens. Careful book keeping ensures that the value of outstanding YES tokens will never exceed the value of collateral in the wrapped collateral contract. In this process, it is necessary to burn NO tokens; they are sent to an uncontrolled burn address.
+It is necessary to synthetically mint wrapped collateral in order to collateralize the resulting YES tokens. Careful bookkeeping ensures that the value of outstanding YES tokens will never exceed the value of collateral in the wrapped collateral contract. In this process, it is necessary to burn NO tokens; they are sent to an uncontrolled burn address.
 
 ### Parameters
 

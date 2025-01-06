@@ -1,6 +1,6 @@
 # NegRiskOperator
 
-The NegRiskOperator is a permissioned controller for interacting with the NegRiskAdapter. The NegRiskOperator serves as the creator and maintainer for Polymarket's neg risk markets and questions.
+The NegRiskOperator is a permissioned controller for interacting with the NegRiskAdapter. The NegRiskOperator serves as the creator and maintainer for Polymarket's nNegRisk  markets and questions.
 
 The admin may flag individual questions, which will prevent them from resolving normally. Additionally, flagged questions may be _emergency resolved_ manually by the admin, after a one hour delay.
 

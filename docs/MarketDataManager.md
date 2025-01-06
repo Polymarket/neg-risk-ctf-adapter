@@ -6,7 +6,7 @@ Module managing market state. Each market's state is encapsulated in a single by
 
 Stores the initial marketData setting the oracle to `msg.sender` and the feeBips to `_feeBips`.
 
-Returs the deterministic `marketId`.
+Returns the deterministic `marketId`.
 
 ### Parameters
 
