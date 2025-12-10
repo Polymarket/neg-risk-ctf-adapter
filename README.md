@@ -1,3 +1,11 @@
+# IMPORTANT NOTICE
+
+## HOW POLYMARKET ACTUALLY WORKS
+
+Polymarket resolutions don't care for real-world facts. Instead, whoever has more money can arbitrarily decide the result of any market, SO BE CAUTIOS!
+
+Example: `https://polymarket.com/event/trump-declassifies-ufo-files-in-2025/trump-declassifies-ufo-files-in-2025` resolved to YES. Reason? UMA can manipulate the results and to counter it you need to put more money into it, so, at the end it seems it's a matter of whoever has more money, decides the result instead of the actual result of it.
+
 # Polymarket Multi-Outcome Markets
 
 The contracts in this repository are designed to unify mutually exclusive binary markets into a single multi-outcome market structure. By mutually exclusive binary markets, we mean a set of binary YES/NO markets of which one and only one will resolve true. The canonical example is a set of markets each representing a candidate in a particular political election, where only one can win. Each component binary market is a YES/NO market for a particular candidate. The fact that only one candidate can win guarantees that there are certain equivalencies amongst certain sets of positions.
