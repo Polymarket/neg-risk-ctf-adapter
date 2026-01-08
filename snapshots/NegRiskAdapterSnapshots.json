@@ -1,0 +1,16 @@
+{
+  "ConditionalTokens_mergePositions": "67020",
+  "ConditionalTokens_prepareCondition": "37163",
+  "ConditionalTokens_reportPayouts": "49706",
+  "ConditionalTokens_splitPosition": "113893",
+  "NegRiskAdapter_convertPositions_128": "19127654",
+  "NegRiskAdapter_convertPositions_196": "29411635",
+  "NegRiskAdapter_convertPositions_32": "4545375",
+  "NegRiskAdapter_convertPositions_5": "705032",
+  "NegRiskAdapter_convertPositions_64": "9485518",
+  "NegRiskAdapter_convertPositions_96": "14194035",
+  "NegRiskAdapter_mergePositions": "145499",
+  "NegRiskAdapter_prepareMarket": "32887",
+  "NegRiskAdapter_prepareQuestion": "37408",
+  "NegRiskAdapter_splitPosition": "170154"
+}

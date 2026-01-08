@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {GasSnapshot} from "forge-gas-snapshot/GasSnapshot.sol";
-
 import {TestHelper} from "src/dev/TestHelper.sol";
 import {DeployLib} from "src/dev/libraries/DeployLib.sol";
 import {USDC} from "src/test/mock/USDC.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 
-contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
+contract NegRiskAdapterSnapshots is TestHelper {
     USDC usdc;
     IConditionalTokens ctf;
     address oracle;
@@ -23,9 +21,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
     function test_snap_prepareCondition() public {
         bytes32 questionId = keccak256("questionId");
 
-        snapStart("ConditionalTokens_prepareCondition");
+        vm.startSnapshotGas("ConditionalTokens_prepareCondition");
         ctf.prepareCondition(oracle, questionId, 2);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_reportPayouts() public {
@@ -36,9 +34,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         payouts[0] = 1;
 
         vm.startPrank(oracle);
-        snapStart("ConditionalTokens_reportPayouts");
+        vm.startSnapshotGas("ConditionalTokens_reportPayouts");
         ctf.reportPayouts(questionId, payouts);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_splitPosition() public {
@@ -55,9 +53,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         partition[0] = 1;
         partition[1] = 2;
 
-        snapStart("ConditionalTokens_splitPosition");
+        vm.startSnapshotGas("ConditionalTokens_splitPosition");
         ctf.splitPosition(address(usdc), bytes32(0), conditionId, partition, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_mergePositions() public {
@@ -78,8 +76,8 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         usdc.approve(address(ctf), 3 * amount);
         ctf.splitPosition(address(usdc), bytes32(0), conditionId, partition, 2 * amount);
 
-        snapStart("ConditionalTokens_mergePositions");
+        vm.startSnapshotGas("ConditionalTokens_mergePositions");
         ctf.mergePositions(address(usdc), bytes32(0), conditionId, partition, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 }
