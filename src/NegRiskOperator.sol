@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
+import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
 import {Auth} from "src/modules/Auth.sol";
 import {IAuthEE} from "src/modules/interfaces/IAuth.sol";
-import {NegRiskIdLib} from "src/libraries/NegRiskIdLib.sol";
+
+import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
 
 /// @title INegRiskOperatorEE
 /// @notice NegRiskOperator Errors and Events
@@ -47,7 +48,7 @@ contract NegRiskOperator is INegRiskOperatorEE, Auth {
 
     NegRiskAdapter public immutable nrAdapter;
     address public oracle;
-    uint256 public constant DELAY_PERIOD = 1 hours;
+    uint256 public constant DELAY_PERIOD = 0;
 
     mapping(bytes32 _requestId => bytes32) public questionIds;
     mapping(bytes32 _questionId => bool) public results;

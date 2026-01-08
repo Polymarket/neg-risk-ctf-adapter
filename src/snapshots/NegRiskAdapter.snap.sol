@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {GasSnapshot} from "forge-gas-snapshot/GasSnapshot.sol";
-
 import {TestHelper} from "src/dev/TestHelper.sol";
 import {NegRiskAdapter, INegRiskAdapterEE} from "src/NegRiskAdapter.sol";
 import {WrappedCollateral} from "src/WrappedCollateral.sol";
@@ -10,7 +8,7 @@ import {DeployLib} from "src/dev/libraries/DeployLib.sol";
 import {USDC} from "src/test/mock/USDC.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 
-contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
+contract NegRiskAdapterSnapshots is TestHelper {
     NegRiskAdapter nrAdapter;
     USDC usdc;
     WrappedCollateral wcol;
@@ -32,9 +30,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
 
         vm.startPrank(oracle);
 
-        snapStart("NegRiskAdapter_prepareMarket");
+        vm.startSnapshotGas("NegRiskAdapter_prepareMarket");
         nrAdapter.prepareMarket(feeBips, data);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_prepareQuestion() public {
@@ -52,9 +50,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
             ++i;
         }
 
-        snapStart("NegRiskAdapter_prepareQuestion");
+        vm.startSnapshotGas("NegRiskAdapter_prepareQuestion");
         nrAdapter.prepareQuestion(marketId, data);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_splitPosition() public {
@@ -77,9 +75,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         nrAdapter.splitPosition(conditionId, amount);
 
         // no balances should zero before _or_ after snap
-        snapStart("NegRiskAdapter_splitPosition");
+        vm.startSnapshotGas("NegRiskAdapter_splitPosition");
         nrAdapter.splitPosition(conditionId, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_mergePositions() public {
@@ -102,9 +100,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         ctf.setApprovalForAll(address(nrAdapter), true);
 
         // no balances should zero before _or_ after snap
-        snapStart("NegRiskAdapter_mergePositions");
+        vm.startSnapshotGas("NegRiskAdapter_mergePositions");
         nrAdapter.mergePositions(conditionId, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_convertPositions_5() public {
@@ -136,9 +134,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         vm.startPrank(alice);
         ctf.setApprovalForAll(address(nrAdapter), true);
 
-        snapStart("NegRiskAdapter_convertPositions_5");
+        vm.startSnapshotGas("NegRiskAdapter_convertPositions_5");
         nrAdapter.convertPositions(marketId, 1, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_convertPositions_32() public {
@@ -170,9 +168,9 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         vm.startPrank(alice);
         ctf.setApprovalForAll(address(nrAdapter), true);
 
-        snapStart("NegRiskAdapter_convertPositions_32");
+        vm.startSnapshotGas("NegRiskAdapter_convertPositions_32");
         nrAdapter.convertPositions(marketId, 1, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_convertPositions_64() public {
@@ -204,8 +202,109 @@ contract NegRiskAdapterSnapshots is TestHelper, GasSnapshot {
         vm.startPrank(alice);
         ctf.setApprovalForAll(address(nrAdapter), true);
 
-        snapStart("NegRiskAdapter_convertPositions_64");
+        vm.startSnapshotGas("NegRiskAdapter_convertPositions_64");
         nrAdapter.convertPositions(marketId, 1, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
+    }
+
+    function test_snap_convertPositions_96() public {
+        uint256 amount = 10_000_000;
+        uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
+
+        // prepare question
+        vm.prank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
+
+        uint256 i = 0;
+        uint256 questionCount = 96;
+        while (i < questionCount) {
+            vm.prank(oracle);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // split position to alice
+            vm.startPrank(alice);
+            usdc.mint(alice, amount);
+            usdc.approve(address(nrAdapter), amount);
+            nrAdapter.splitPosition(conditionId, amount);
+            vm.stopPrank();
+
+            ++i;
+        }
+
+        vm.startPrank(alice);
+        ctf.setApprovalForAll(address(nrAdapter), true);
+        vm.startSnapshotGas("NegRiskAdapter_convertPositions_96");
+        nrAdapter.convertPositions(marketId, 1, amount);
+        vm.stopSnapshotGas();
+    }
+
+    function test_snap_convertPositions_128() public {
+        uint256 amount = 10_000_000;
+        uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
+
+        // prepare question
+        vm.prank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
+
+        uint256 i = 0;
+        uint256 questionCount = 128;
+        while (i < questionCount) {
+            vm.prank(oracle);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // split position to alice
+            vm.startPrank(alice);
+            usdc.mint(alice, amount);
+            usdc.approve(address(nrAdapter), amount);
+            nrAdapter.splitPosition(conditionId, amount);
+            vm.stopPrank();
+
+            ++i;
+        }
+
+        vm.startPrank(alice);
+        ctf.setApprovalForAll(address(nrAdapter), true);
+
+        vm.startSnapshotGas("NegRiskAdapter_convertPositions_128");
+        nrAdapter.convertPositions(marketId, 1, amount);
+        vm.stopSnapshotGas();
+    }
+
+    function test_snap_convertPositions_196() public {
+        uint256 amount = 10_000_000;
+        uint256 feeBips = 0;
+        bytes memory data = new bytes(0);
+
+        // prepare question
+        vm.prank(oracle);
+        bytes32 marketId = nrAdapter.prepareMarket(feeBips, data);
+
+        uint256 i = 0;
+        uint256 questionCount = 196;
+        while (i < questionCount) {
+            vm.prank(oracle);
+            bytes32 questionId = nrAdapter.prepareQuestion(marketId, data);
+            bytes32 conditionId = nrAdapter.getConditionId(questionId);
+
+            // split position to alice
+            vm.startPrank(alice);
+            usdc.mint(alice, amount);
+            usdc.approve(address(nrAdapter), amount);
+            nrAdapter.splitPosition(conditionId, amount);
+            vm.stopPrank();
+
+            ++i;
+        }
+
+        vm.startPrank(alice);
+        ctf.setApprovalForAll(address(nrAdapter), true);
+
+        vm.startSnapshotGas("NegRiskAdapter_convertPositions_196");
+        nrAdapter.convertPositions(marketId, 1, amount);
+        vm.stopSnapshotGas();
     }
 }
