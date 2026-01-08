@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {GasSnapshot} from "forge-gas-snapshot/GasSnapshot.sol";
-
 import {TestHelper} from "src/dev/TestHelper.sol";
-import {NegRiskAdapter} from "src/NegRiskAdapter.sol";
-import {WrappedCollateral} from "src/WrappedCollateral.sol";
 import {DeployLib} from "src/dev/libraries/DeployLib.sol";
 import {USDC} from "src/test/mock/USDC.sol";
 
-contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
+import {WrappedCollateral} from "src/WrappedCollateral.sol";
+
+contract WrappedCollateralSnapshots is TestHelper {
     USDC usdc;
     WrappedCollateral wcol;
     address owner;
@@ -29,13 +27,13 @@ contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
 
         vm.startPrank(owner);
 
-        snapStart("WrappedCollateral_mint");
+        vm.startSnapshotGas("WrappedCollateral_mint");
         wcol.mint(amount);
-        snapEnd();
+        vm.stopSnapshotGas();
 
-        snapStart("WrappedCollateral_burn");
+        vm.startSnapshotGas("WrappedCollateral_burn");
         wcol.burn(amount);
-        snapEnd();
+        vm.stopSnapshotGas();
 
         vm.stopPrank();
     }
@@ -48,17 +46,17 @@ contract WrappedCollateralSnapshots is TestHelper, GasSnapshot {
 
         usdc.approve(address(wcol), amount);
 
-        snapStart("WrappedCollateral_wrap");
+        vm.startSnapshotGas("WrappedCollateral_wrap");
         wcol.wrap(brian, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
 
         vm.stopPrank();
 
         vm.startPrank(brian);
 
-        snapStart("WrappedCollateral_unwrap");
+        vm.startSnapshotGas("WrappedCollateral_unwrap");
         wcol.unwrap(alice, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
 
         vm.stopPrank();
     }

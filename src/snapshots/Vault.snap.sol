@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import {GasSnapshot} from "forge-gas-snapshot/GasSnapshot.sol";
-
-import {TestHelper} from "src/dev/TestHelper.sol";
-import {Vault} from "src/Vault.sol";
-import {USDC} from "src/test/mock/USDC.sol";
 import {DeployLib} from "src/dev/libraries/DeployLib.sol";
+import {TestHelper} from "src/dev/TestHelper.sol";
 import {IConditionalTokens} from "src/interfaces/IConditionalTokens.sol";
 import {CTHelpers} from "src/libraries/CTHelpers.sol";
 import {Helpers} from "src/libraries/Helpers.sol";
+import {USDC} from "src/test/mock/USDC.sol";
 
-contract VaultSnapshots is TestHelper, GasSnapshot {
+import {Vault} from "src/Vault.sol";
+
+contract VaultSnapshots is TestHelper {
     USDC usdc;
     IConditionalTokens ctf;
     Vault vault;
@@ -33,9 +32,9 @@ contract VaultSnapshots is TestHelper, GasSnapshot {
 
         vm.startPrank(alice);
 
-        snapStart("Vault_transferERC20");
+        vm.startSnapshotGas("Vault_transferERC20");
         vault.transferERC20(address(usdc), devin, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 
     function test_snap_transferERC1155() public {
@@ -65,8 +64,8 @@ contract VaultSnapshots is TestHelper, GasSnapshot {
         ctf.safeTransferFrom(brian, address(vault), positionId1, amount, "");
 
         vm.startPrank(alice);
-        snapStart("Vault_transferERC1155");
+        vm.startSnapshotGas("Vault_transferERC1155");
         vault.transferERC1155(address(ctf), carly, positionId0, amount);
-        snapEnd();
+        vm.stopSnapshotGas();
     }
 }

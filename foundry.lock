@@ -1,0 +1,14 @@
+{
+  "lib/ctf-exchange": {
+    "rev": "2745c3017400dbc1925711005fe76b018b999155"
+  },
+  "lib/exchange-fee-module": {
+    "rev": "9abb8cd0b9ce57ed1a8c2365dae4c9e7ea02cf20"
+  },
+  "lib/forge-std": {
+    "rev": "8e40513d678f392f398620b3ef2b418648b33e89"
+  },
+  "lib/solmate": {
+    "rev": "bfc9c25865a274a7827fea5abf6e4fb64fc64e6c"
+  }
+}
